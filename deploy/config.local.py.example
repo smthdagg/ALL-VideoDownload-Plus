@@ -1,0 +1,175 @@
+# Copy this file to deploy/config.local.py, fill real values, then run:
+#   scripts/init-local.sh
+#
+# This file becomes vendor/tg-ytdlp-bot/CONFIG/config.py.
+# Do not commit the real deploy/config.local.py.
+
+from CONFIG.commands import CommandsConfig
+from CONFIG.messages import safe_get_messages
+from CONFIG.domains import DomainsConfig
+from CONFIG.limits import LimitsConfig
+
+
+class Config(object):
+    # Required Telegram values.
+    BOT_NAME = "your_bot_username_without_at"
+    BOT_NAME_FOR_USERS = "your_bot_username_without_at"
+    ADMIN = [123456789]
+    # Private mode: only ADMIN and PRIVATE_ALLOWED_USERS can use private chats.
+    PRIVATE_MODE = True
+    PRIVATE_ALLOWED_USERS = []
+    ALLOWED_GROUP = []
+    API_ID = 123456
+    API_HASH = "replace_with_my_telegram_org_api_hash"
+    BOT_TOKEN = "replace_with_botfather_token"
+
+    # Mini app and logging/subscription channels.
+    MINIAPP_URL = "https://t.me/your_bot_username_without_at/?startapp"
+    LOGS_ID = -1001234567890
+    LOGS_VIDEO_ID = LOGS_ID
+    LOGS_NSFW_ID = LOGS_ID
+    LOGS_IMG_ID = LOGS_ID
+    LOGS_PAID_ID = LOGS_ID
+    LOG_EXCEPTION = LOGS_ID
+    SUBSCRIBE_CHANNEL = None
+    SUBSCRIBE_CHANNEL_URL = ""
+
+    REQUIRED_CHANNEL_MENTION = "@your_channel"
+    CREDITS_MANAGED_BY = "@your_username"
+    CREDITS_BOTS = "@your_bot_username_without_at"
+    CHANNEL_GUARD_SESSION_STRING = ""
+
+    # Keep Firebase disabled for local/VPS self-hosting.
+    USE_FIREBASE = False
+    BOT_DB_PATH = f"bot/{BOT_NAME_FOR_USERS}/"
+    VIDEO_CACHE_DB_PATH = "bot/video_cache"
+    PLAYLIST_CACHE_DB_PATH = "bot/video_cache/playlists"
+    IMAGE_CACHE_DB_PATH = "bot/video_cache/images"
+    FIREBASE_USER = ""
+    FIREBASE_PASSWORD = ""
+    FIREBASE_CONF = {}
+
+    # Cookies are served by the bundled Caddy sidecar.
+    COOKIE_URL = "http://configuration-webserver/cookies/cookie.txt"
+    YOUTUBE_COOKIE_URL = "http://configuration-webserver/cookies/youtube.txt"
+    YOUTUBE_COOKIE_URL_1 = "http://configuration-webserver/cookies/youtube-1.txt"
+    YOUTUBE_COOKIE_URL_2 = "http://configuration-webserver/cookies/youtube-2.txt"
+    YOUTUBE_COOKIE_URL_3 = "http://configuration-webserver/cookies/youtube-3.txt"
+    YOUTUBE_COOKIE_URL_4 = "http://configuration-webserver/cookies/youtube-4.txt"
+    YOUTUBE_COOKIE_URL_5 = "http://configuration-webserver/cookies/youtube-5.txt"
+    YOUTUBE_COOKIE_URL_6 = "http://configuration-webserver/cookies/youtube-6.txt"
+    YOUTUBE_COOKIE_URL_7 = "http://configuration-webserver/cookies/youtube-7.txt"
+    YOUTUBE_COOKIE_URL_8 = "http://configuration-webserver/cookies/youtube-8.txt"
+    YOUTUBE_COOKIE_URL_9 = "http://configuration-webserver/cookies/youtube-9.txt"
+    YOUTUBE_COOKIE_URL_10 = "http://configuration-webserver/cookies/youtube-10.txt"
+    YOUTUBE_COOKIE_ORDER = "round_robin"
+    YOUTUBE_COOKIE_TEST_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    INSTAGRAM_COOKIE_URL = "http://configuration-webserver/cookies/instagram.txt"
+    TIKTOK_COOKIE_URL = "http://configuration-webserver/cookies/tiktok.txt"
+    FACEBOOK_COOKIE_URL = "http://configuration-webserver/cookies/facebook.txt"
+    TWITTER_COOKIE_URL = "http://configuration-webserver/cookies/twitter.txt"
+    VK_COOKIE_URL = "http://configuration-webserver/cookies/vk.txt"
+
+    COOKIE_FILE_PATH = "TXT/cookie.txt"
+    PIC_FILE_PATH = "pic.jpg"
+    FIREBASE_CACHE_FILE = "dump.json"
+    RELOAD_CACHE_EVERY = 1
+    DOWNLOAD_FIREBASE_SCRIPT_PATH = "DATABASE/download_firebase.py"
+    AUTO_CACHE_RELOAD_ENABLED = True
+
+    # Proxy defaults. Fill these only if you need a proxy.
+    PROXY_TYPE = "http"
+    PROXY_IP = ""
+    PROXY_PORT = 0
+    PROXY_USER = ""
+    PROXY_PASSWORD = ""
+    PROXY_2_TYPE = "socks5"
+    PROXY_2_IP = ""
+    PROXY_2_PORT = 0
+    PROXY_2_USER = ""
+    PROXY_2_PASSWORD = ""
+    PROXY_SELECT = "round_robin"
+
+    # YouTube PO token provider is included in docker-compose.yml.
+    YOUTUBE_POT_ENABLED = True
+    YOUTUBE_POT_BASE_URL = "http://bgutil-provider:4416"
+    YOUTUBE_POT_DISABLE_INNERTUBE = False
+
+    DOWNLOAD_COOKIE_COMMAND = CommandsConfig.DOWNLOAD_COOKIE_COMMAND
+    PROXY_COMMAND = CommandsConfig.PROXY_COMMAND
+    SUBS_COMMAND = CommandsConfig.SUBS_COMMAND
+    CHECK_COOKIE_COMMAND = CommandsConfig.CHECK_COOKIE_COMMAND
+    SAVE_AS_COOKIE_COMMAND = CommandsConfig.SAVE_AS_COOKIE_COMMAND
+    AUDIO_COMMAND = CommandsConfig.AUDIO_COMMAND
+    UNCACHE_COMMAND = CommandsConfig.UNCACHE_COMMAND
+    PLAYLIST_COMMAND = CommandsConfig.PLAYLIST_COMMAND
+    FORMAT_COMMAND = CommandsConfig.FORMAT_COMMAND
+    MEDIINFO_COMMAND = CommandsConfig.MEDIINFO_COMMAND
+    SETTINGS_COMMAND = CommandsConfig.SETTINGS_COMMAND
+    COOKIES_FROM_BROWSER_COMMAND = CommandsConfig.COOKIES_FROM_BROWSER_COMMAND
+    BLOCK_USER_COMMAND = CommandsConfig.BLOCK_USER_COMMAND
+    UNBLOCK_USER_COMMAND = CommandsConfig.UNBLOCK_USER_COMMAND
+    BAN_TIME_COMMAND = CommandsConfig.BAN_TIME_COMMAND
+    RUN_TIME = CommandsConfig.RUN_TIME
+    GET_USER_LOGS_COMMAND = CommandsConfig.GET_USER_LOGS_COMMAND
+    CLEAN_COMMAND = CommandsConfig.CLEAN_COMMAND
+    USAGE_COMMAND = CommandsConfig.USAGE_COMMAND
+    TAGS_COMMAND = CommandsConfig.TAGS_COMMAND
+    BROADCAST_MESSAGE = CommandsConfig.BROADCAST_MESSAGE
+    GET_USER_DETAILS_COMMAND = CommandsConfig.GET_USER_DETAILS_COMMAND
+    SPLIT_COMMAND = CommandsConfig.SPLIT_COMMAND
+    RELOAD_CACHE_COMMAND = CommandsConfig.RELOAD_CACHE_COMMAND
+    AUTO_CACHE_COMMAND = CommandsConfig.AUTO_CACHE_COMMAND
+    SEARCH_COMMAND = CommandsConfig.SEARCH_COMMAND
+    KEYBOARD_COMMAND = CommandsConfig.KEYBOARD_COMMAND
+    LINK_COMMAND = CommandsConfig.LINK_COMMAND
+    IMG_COMMAND = CommandsConfig.IMG_COMMAND
+    ADD_BOT_TO_GROUP_COMMAND = CommandsConfig.ADD_BOT_TO_GROUP_COMMAND
+    NSFW_COMMAND = CommandsConfig.NSFW_COMMAND
+    ARGS_COMMAND = CommandsConfig.ARGS_COMMAND
+    LIST_COMMAND = CommandsConfig.LIST_COMMAND
+
+    @classmethod
+    def get_messages(cls, user_id=None, language_code=None):
+        return safe_get_messages(user_id, language_code)
+
+    @classmethod
+    def get_message(cls, message_key, user_id=None, language_code=None):
+        messages = cls.get_messages(user_id, language_code)
+        return getattr(messages, message_key, f"[{message_key}]")
+
+    GREYLIST = DomainsConfig.GREYLIST
+    BLACK_LIST = DomainsConfig.BLACK_LIST
+    PORN_DOMAINS_FILE = DomainsConfig.PORN_DOMAINS_FILE
+    PORN_KEYWORDS_FILE = DomainsConfig.PORN_KEYWORDS_FILE
+    SUPPORTED_SITES_FILE = DomainsConfig.SUPPORTED_SITES_FILE
+    UPDATE_PORN_SCRIPT_PATH = DomainsConfig.UPDATE_PORN_SCRIPT_PATH
+    WHITELIST = DomainsConfig.WHITELIST
+    NO_COOKIE_DOMAINS = DomainsConfig.NO_COOKIE_DOMAINS
+    PROXY_DOMAINS = DomainsConfig.PROXY_DOMAINS
+    PROXY_2_DOMAINS = DomainsConfig.PROXY_2_DOMAINS
+    TIKTOK_DOMAINS = DomainsConfig.TIKTOK_DOMAINS
+    CLEAN_QUERY = DomainsConfig.CLEAN_QUERY
+    PIPED_DOMAIN = DomainsConfig.PIPED_DOMAIN
+
+    MAX_FILE_SIZE_GB = LimitsConfig.MAX_FILE_SIZE_GB
+    DOWNLOAD_TIMEOUT = LimitsConfig.DOWNLOAD_TIMEOUT
+    MAX_SUB_QUALITY = LimitsConfig.MAX_SUB_QUALITY
+    MAX_SUB_DURATION = LimitsConfig.MAX_SUB_DURATION
+    MAX_SUB_SIZE = LimitsConfig.MAX_SUB_SIZE
+    MAX_PLAYLIST_COUNT = LimitsConfig.MAX_PLAYLIST_COUNT
+    MAX_TIKTOK_COUNT = LimitsConfig.MAX_TIKTOK_COUNT
+    MAX_VIDEO_DURATION = LimitsConfig.MAX_VIDEO_DURATION
+    MAX_IMG_FILES = LimitsConfig.MAX_IMG_FILES
+    GROUP_MULTIPLIER = LimitsConfig.GROUP_MULTIPLIER
+    NSFW_STAR_COST = LimitsConfig.NSFW_STAR_COST
+
+    STAR_RECEIVER = 0
+    RATE_LIMIT_PER_MINUTE = LimitsConfig.RATE_LIMIT_PER_MINUTE
+    RATE_LIMIT_PER_HOUR = LimitsConfig.RATE_LIMIT_PER_HOUR
+    RATE_LIMIT_PER_DAY = LimitsConfig.RATE_LIMIT_PER_DAY
+
+    DASHBOARD_PORT = 5555
+    DASHBOARD_USERNAME = "admin"
+    DASHBOARD_PASSWORD = "change_this_password"
+    ACTIVE_SESSIONS_FILE = "CONFIG/.active_sessions.json"
