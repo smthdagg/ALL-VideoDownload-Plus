@@ -38,6 +38,9 @@ if [ "$INCLUDE_PRIVATE" != "1" ]; then
     --exclude 'deploy/cookies/*.txt'
     --exclude 'vendor/tg-ytdlp-bot/.env'
     --exclude 'vendor/tg-ytdlp-bot/magic.session'
+    --exclude 'vendor/tg-ytdlp-bot/CONFIG/config.py'
+    --exclude 'vendor/tg-ytdlp-bot/CONFIG/.active_sessions.json'
+    --exclude 'vendor/tg-ytdlp-bot/TXT/cookie.txt'
     --exclude 'vendor/tg-ytdlp-bot/docker/configuration-webserver/site/cookies/*.txt'
     --exclude 'vendor/tg-ytdlp-bot/docker/douyin-api/douyin_web/config.yaml'
   )
