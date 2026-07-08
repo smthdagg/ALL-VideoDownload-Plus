@@ -1,15 +1,15 @@
 # VideoDownload Telegram Bot
 
-Private-first Telegram video downloader for self-hosting on Docker or a VPS.
+Private-first Telegram video downloader for TikTok, Douyin, WeChat Channels / Weixin Video, YouTube, Instagram, X/Twitter, Bilibili, Xiaohongshu, and other platforms, designed for self-hosting on Docker or a VPS.
 
 This repository is a deployment wrapper and patch set around
-[`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, Douyin handling, WeChat Channels handling, and deployment scripts.
+[`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, Douyin handling, WeChat Channels handling, TikTok Telegram compatibility, and deployment scripts. This is a semi-original project built through custom development with Codex assistance: the mature downloader engine is upstream, while the deployment layer, privacy hardening, Chinese-platform resolvers, tests, and documentation are custom work in this repo.
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
 ## Features
 
-- Telegram bot downloads videos from YouTube, TikTok, Instagram, X/Twitter, Bilibili, Xiaohongshu, and many other `yt-dlp` / `gallery-dl` supported sites.
+- Telegram bot downloads videos from TikTok, Douyin, WeChat Channels / Weixin Video, YouTube, Instagram, X/Twitter, Bilibili, Xiaohongshu, and many other `yt-dlp` / `gallery-dl` supported sites.
 - Private-use access control: admins and explicitly allowed Telegram user IDs only.
 - Local Docker workflow for testing before VPS deployment.
 - VPS-friendly Docker Compose stack.
@@ -172,7 +172,7 @@ deploy/cookies/douyin.txt
 
 Use Netscape cookies.txt format unless a resolver explicitly documents a raw Cookie header.
 
-For WeChat Channels Yuanbao fallback, set:
+For WeChat Channels Yuanbao fallback, set the runtime environment value after `scripts/init-local.sh` has created `vendor/tg-ytdlp-bot/.env`:
 
 ```env
 WECHAT_CHANNELS_YUANBAO_COOKIE=
@@ -180,6 +180,69 @@ WECHAT_CHANNELS_TIMEOUT=30
 ```
 
 You can update this at runtime by sending `/set_yuanbao_cookie` to the bot as an admin and replying with a cookie file or Cookie header.
+
+### Douyin Cookie Update
+
+Douyin can often work without a personal cookie, but keeping a fresh cookie improves success rate when Douyin changes anti-bot checks.
+
+Supported input formats:
+
+- Netscape `cookies.txt` exported from the browser;
+- raw request header, for example `Cookie: name=value; name2=value2`.
+
+Update steps:
+
+1. Log in to <https://www.douyin.com/> in your browser.
+2. Export Douyin cookies as Netscape cookies.txt, or copy a request `Cookie` header for `douyin.com`.
+3. Save it as:
+
+   ```text
+   deploy/cookies/douyin.txt
+   ```
+
+4. Re-run initialization so the cookie is synchronized into the optional Douyin sidecar:
+
+   ```bash
+   scripts/init-local.sh
+   scripts/local-up.sh
+   ```
+
+On a VPS, run the same commands inside the deployed project directory, for example `/opt/video-download-bot`.
+
+Notes:
+
+- `deploy/cookies/douyin.txt` is ignored by Git.
+- Public-safe packages created by `scripts/package-for-vps.sh` exclude it.
+- Private migration packages created with `--include-private` can include it, so keep those archives private.
+
+### WeChat Channels Yuanbao Cookie
+
+Some WeChat Channels links only expose preview metadata from the public `weixin.qq.com/sph/...` page. For those links, this project can optionally use a logged-in Tencent Yuanbao web cookie as a fallback.
+
+Yuanbao entry:
+
+- Official site: <https://yuanbao.tencent.com/>
+- Chat page: <https://yuanbao.tencent.com/chat/>
+
+Recommended workflow:
+
+1. Open the Yuanbao chat page in your browser and log in.
+2. Open browser developer tools, then find a request to `yuanbao.tencent.com`.
+3. Copy the request `Cookie` header, or export it as a cookie file.
+4. Send `/set_yuanbao_cookie` to the bot as an admin.
+5. Reply with the Cookie header or cookie file.
+
+Manual VPS update:
+
+1. Open `vendor/tg-ytdlp-bot/.env`.
+2. Set `WECHAT_CHANNELS_YUANBAO_COOKIE` to the copied Cookie header.
+3. Restart the bot:
+
+   ```bash
+   scripts/local-up.sh
+   ```
+
+Treat this cookie like a password. Do not commit it, paste it into GitHub issues, or include it in public VPS packages.
 
 ## Configuration Notes
 
@@ -218,7 +281,7 @@ Short version:
 - Core Telegram downloader: `upekshaip/tg-ytdlp-bot`.
 - Download engines: `yt-dlp`, `gallery-dl`, `ffmpeg`.
 - Optional Douyin/TikTok sidecar: `Evil0ctal/Douyin_TikTok_Download_API`.
-- Custom work in this repo: deployment wrapper, privacy hardening, custom Douyin/WeChat resolvers, Telegram admin cookie update command, TikTok compatibility format selection, tests, and documentation.
+- Custom work in this repo: deployment wrapper, privacy hardening, custom Douyin/WeChat Channels resolvers, Telegram admin cookie update command, TikTok compatibility format selection, tests, documentation, and VPS/local operational workflow, developed with Codex assistance.
 
 ## Legal and Safety Notice
 

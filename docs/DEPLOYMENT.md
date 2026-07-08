@@ -78,9 +78,23 @@ http://localhost:5555
 Place site cookies in `deploy/cookies/*.txt`. Keep them in Netscape cookies.txt
 format unless a resolver explicitly says otherwise.
 
+For Douyin, put the exported cookie or raw Cookie header in:
+
+```text
+deploy/cookies/douyin.txt
+```
+
+Then run:
+
+```bash
+scripts/init-local.sh
+scripts/local-up.sh
+```
+
 For WeChat Channels Yuanbao fallback, either set
-`WECHAT_CHANNELS_YUANBAO_COOKIE` in `.env`, or send `/set_yuanbao_cookie` to
-the bot as an admin and reply with a cookie file or Cookie header.
+`WECHAT_CHANNELS_YUANBAO_COOKIE` in `vendor/tg-ytdlp-bot/.env`, or send
+`/set_yuanbao_cookie` to the bot as an admin and reply with a cookie file or
+Cookie header.
 
 ## Updating Upstream
 
@@ -92,4 +106,3 @@ scripts/init-local.sh
 
 The script updates/clones upstream under `vendor/tg-ytdlp-bot`, reapplies local
 patches, and rewrites the runtime Docker files.
-

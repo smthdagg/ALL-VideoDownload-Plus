@@ -1,7 +1,10 @@
 # Credits and Original Work
 
 VideoDownload combines a mature open-source Telegram downloader with a focused
-private deployment and resolver layer.
+private deployment and resolver layer. It is a semi-original project: the core
+downloader engine is based on upstream open source work, while the private
+deployment workflow, Chinese-platform enhancements, tests, and documentation
+were custom-developed with Codex assistance.
 
 ## Upstream and Dependencies
 
@@ -34,9 +37,10 @@ private deployment and resolver layer.
 - TikTok H.264 + AAC MP4 format preference to avoid silent Telegram playback.
 - Tests for custom Douyin and WeChat Channels parsing.
 - English and Chinese project documentation.
+- Project organization, documentation, and release cleanup completed with Codex
+  assistance.
 
 ## License
 
 The upstream bot is distributed under GPL-3.0. This wrapper and patch set is
 published under the same GPL-3.0 license for compatibility.
-
