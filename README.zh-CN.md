@@ -1,17 +1,17 @@
 # VideoDownload Telegram Bot
 
-一个适合个人自部署的 Telegram 视频下载 bot，支持本地 Docker 测试和 VPS 24 小时运行。
+一个适合个人自部署的 Telegram 视频下载 bot，重点支持 TikTok、抖音、微信视频号 / WeChat Channels、YouTube、Instagram、X/Twitter、Bilibili、小红书等平台，支持本地 Docker 测试和 VPS 24 小时运行。
 
 本项目不是从零重写下载器，而是基于
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot)
-做部署封装和功能增强。上游 bot 负责 Telegram、`yt-dlp`、`gallery-dl`、上传、格式选择等核心能力；本项目负责私有化部署、抖音/视频号增强、VPS 脚本、安全默认值和文档。
+做部署封装和功能增强。上游 bot 负责 Telegram、`yt-dlp`、`gallery-dl`、上传、格式选择等核心能力；本项目负责私有化部署、抖音/视频号增强、TikTok Telegram 兼容、VPS 脚本、安全默认值、测试和文档。这个项目属于“半原创”：成熟下载底座借鉴/复用上游开源项目，中文平台适配、部署流程和安全加固是在 Codex 协助下定制开发完成。
 
 English documentation: [README.md](README.md).
 
 ## 功能
 
 - Telegram 内直接发送链接，bot 下载并回传视频。
-- 支持 YouTube、TikTok、Instagram、X/Twitter、Bilibili、小红书，以及大量 `yt-dlp` / `gallery-dl` 支持的网站。
+- 主要支持 TikTok、抖音、微信视频号 / WeChat Channels、YouTube、Instagram、X/Twitter、Bilibili、小红书，以及大量 `yt-dlp` / `gallery-dl` 支持的网站。
 - 默认私有使用：
   - 只有 `ADMIN` 和 `PRIVATE_ALLOWED_USERS` 可以私聊使用；
   - 群组默认关闭，除非显式加入 `ALLOWED_GROUP`。
@@ -193,7 +193,7 @@ deploy/cookies/douyin.txt
 
 默认使用 Netscape cookies.txt 格式。
 
-视频号 Yuanbao fallback 可在 `.env` 配置：
+视频号 Yuanbao fallback 可在 `scripts/init-local.sh` 生成的运行时环境文件里配置：
 
 ```env
 WECHAT_CHANNELS_YUANBAO_COOKIE=
@@ -201,6 +201,76 @@ WECHAT_CHANNELS_TIMEOUT=30
 ```
 
 也可以用管理员账号在 Telegram 里发送 `/set_yuanbao_cookie`，回复 cookie 文件或 Cookie header，即可运行时更新。
+
+### 抖音 Cookie 更新
+
+抖音很多链接可以不依赖本人 cookie，但抖音风控变化比较频繁，保持一个新的 cookie 可以提高解析成功率。
+
+支持两种格式：
+
+- 浏览器导出的 Netscape `cookies.txt`；
+- 原始请求头，例如 `Cookie: name=value; name2=value2`。
+
+更新步骤：
+
+1. 浏览器打开 <https://www.douyin.com/> 并登录。
+2. 导出 Douyin cookies.txt，或在开发者工具 Network / 网络里复制 `douyin.com` 请求的 `Cookie` header。
+3. 保存到：
+
+   ```text
+   deploy/cookies/douyin.txt
+   ```
+
+4. 重新执行初始化，让脚本同步到可选的 Douyin sidecar 配置：
+
+   ```bash
+   scripts/init-local.sh
+   scripts/local-up.sh
+   ```
+
+如果是在 VPS 上，进入部署目录后执行同样命令，例如：
+
+```bash
+cd /opt/video-download-bot
+scripts/init-local.sh
+scripts/local-up.sh
+```
+
+注意：
+
+- `deploy/cookies/douyin.txt` 已被 Git 忽略，不会上传 GitHub。
+- `scripts/package-for-vps.sh` 默认不会打包这个 cookie。
+- 只有使用 `--include-private` 时才会包含真实 cookie，所以这个私有迁移包必须自己保存。
+
+### 视频号 Yuanbao Cookie 获取
+
+部分视频号链接的公开页面 `weixin.qq.com/sph/...` 只返回预览信息，这时项目可以选择使用已登录的腾讯元宝网页 cookie 作为 fallback。
+
+元宝入口：
+
+- 官方首页：<https://yuanbao.tencent.com/>
+- 网页聊天：<https://yuanbao.tencent.com/chat/>
+
+推荐步骤：
+
+1. 用浏览器打开元宝网页聊天并登录。
+2. 打开浏览器开发者工具，刷新或发送一次消息。
+3. 在 Network / 网络里找到 `yuanbao.tencent.com` 请求。
+4. 复制请求里的 `Cookie` header，或者导出 cookie 文件。
+5. 在 Telegram 里用管理员账号发送 `/set_yuanbao_cookie`。
+6. 把 Cookie header 或 cookie 文件回复给 bot。
+
+手动更新方式：
+
+1. 打开 `vendor/tg-ytdlp-bot/.env`。
+2. 把复制到的 Cookie header 填到 `WECHAT_CHANNELS_YUANBAO_COOKIE=` 后面。
+3. 重启 bot：
+
+   ```bash
+   scripts/local-up.sh
+   ```
+
+这个 cookie 等同于你的登录态，请像密码一样保管。不要提交到 GitHub，不要贴到 issue，不要放进公开打包文件。
 
 ## 验证
 
@@ -219,7 +289,7 @@ git status --ignored -s
 - 核心 bot 来自 `upekshaip/tg-ytdlp-bot`。
 - 下载能力来自 `yt-dlp`、`gallery-dl`、`ffmpeg`。
 - 可选抖音 sidecar 来自 `Evil0ctal/Douyin_TikTok_Download_API`。
-- 本项目自研部分包括：部署封装、私有化安全默认值、抖音移动端解析、视频号/Yuanbao 解析、Telegram 更新 cookie 命令、TikTok Telegram 兼容格式策略、测试和文档。
+- 本项目自研/半原创部分包括：部署封装、私有化安全默认值、抖音移动端解析、视频号/Yuanbao 解析、Telegram 更新 cookie 命令、TikTok Telegram 兼容格式策略、测试、文档和 VPS 运维流程；这些部分是在 Codex 协助下开发整理完成。
 
 ## 法律和安全提示
 
