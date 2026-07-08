@@ -115,11 +115,11 @@ def set_yuanbao_cookie_command(app, message):
             f"元宝 Cookie 已更新，识别到 {pair_count} 个 cookie。当前 bot 进程已刷新，重启后也会保留。",
         )
         logger.info(f"Yuanbao cookie updated by admin {message.chat.id}; pairs={pair_count}")
-
+    except Exception as exc:
+        logger.error(f"Failed to update Yuanbao cookie: {exc}")
+        send_to_user(message, "更新元宝 Cookie 失败，请检查 cookie 格式后重试。详细错误已写入服务端日志。")
+    finally:
         try:
             app.delete_messages(message.chat.id, secret_message_ids)
         except Exception:
             pass
-    except Exception as exc:
-        logger.error(f"Failed to update Yuanbao cookie: {exc}")
-        send_to_user(message, f"更新元宝 Cookie 失败：{exc}")
