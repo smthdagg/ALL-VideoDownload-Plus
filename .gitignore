@@ -1,0 +1,22 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.private/
+
+# Upstream app is cloned locally by scripts/bootstrap-upstream.sh.
+vendor/tg-ytdlp-bot/
+
+# Local secrets and generated runtime state.
+deploy/config.local.py
+deploy/cookies/*.txt
+deploy/package/
+*.tar.gz
+*.session
+*.session-shm
+*.session-wal
+*.log
+users/
+downloads/
+download/
+dump.json
