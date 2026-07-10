@@ -658,6 +658,184 @@ def _is_tiktok_url(url: str) -> bool:
         path.write_text(text.replace(needle, replacement, 1), encoding="utf-8")
 
 
+def patch_x_multi_video_posts() -> None:
+    path = APP / "DOWN_AND_UP" / "down_and_up.py"
+    text = path.read_text(encoding="utf-8")
+
+    if "def _is_x_twitter_url(url: str) -> bool:" not in text:
+        replace_once(
+            path,
+            '''def _is_tiktok_url(url: str) -> bool:
+    try:
+        host = urlparse(url).netloc.lower()
+    except Exception:
+        return False
+    return host == "tiktok.com" or host.endswith(".tiktok.com")
+
+
+''',
+            '''def _is_tiktok_url(url: str) -> bool:
+    try:
+        host = urlparse(url).netloc.lower()
+    except Exception:
+        return False
+    return host == "tiktok.com" or host.endswith(".tiktok.com")
+
+
+def _is_x_twitter_url(url: str) -> bool:
+    try:
+        host = urlparse(url).netloc.lower()
+    except Exception:
+        return False
+    return host in {"x.com", "twitter.com"} or host.endswith(".x.com") or host.endswith(".twitter.com")
+
+
+def _get_multi_video_entries(info) -> list:
+    if not isinstance(info, dict):
+        return []
+
+    entries = info.get("_playlist_entries") or info.get("entries")
+    if not isinstance(entries, list):
+        return []
+
+    video_entries = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("formats") or entry.get("url") or entry.get("webpage_url"):
+            video_entries.append(entry)
+    return video_entries
+
+
+''',
+        )
+
+    text = path.read_text(encoding="utf-8")
+    marker = '''    user_id = message.chat.id
+    original_url = url
+'''
+    insertion = '''    user_id = message.chat.id
+    original_url = url
+    x_multi_video_entries = _get_multi_video_entries(cached_video_info) if _is_x_twitter_url(url) else []
+    if _is_x_twitter_url(url) and not x_multi_video_entries and video_count == 1:
+        try:
+            from DOWN_AND_UP.yt_dlp_hook import get_video_formats
+            probed_info = get_video_formats(url, user_id, 1, cookies_already_checked, use_proxy)
+            probed_entries = _get_multi_video_entries(probed_info)
+            if len(probed_entries) > 1:
+                cached_video_info = probed_info
+                x_multi_video_entries = probed_entries
+        except Exception as exc:
+            logger.warning(f"Could not pre-detect X/Twitter multi-video entries for {url}: {exc}")
+    if x_multi_video_entries and len(x_multi_video_entries) > 1:
+        video_count = len(x_multi_video_entries)
+        video_start_with = 1
+        logger.info(f"X/Twitter multi-video post detected: {video_count} media entries will be downloaded")
+'''
+    if "x_multi_video_entries = _get_multi_video_entries" not in text:
+        if marker not in text:
+            raise RuntimeError(f"Expected X multi-video insertion point not found in {path}")
+        path.write_text(text.replace(marker, insertion, 1), encoding="utf-8")
+
+    text = path.read_text(encoding="utf-8")
+    old = '''                    elif len(entries) > 1:  # If the video in the playlist is more than one
+                        if current_index and current_index < len(entries):
+                            info_dict = entries[current_index]
+                        else:
+                            raise Exception(f"Video index {current_index} out of range (total {len(entries)})")
+'''
+    new = '''                    elif len(entries) > 1:  # If the video in the playlist is more than one
+                        entry_index = int(current_index) - 1 if current_index else 0
+                        if 0 <= entry_index < len(entries):
+                            info_dict = entries[entry_index]
+                        else:
+                            raise Exception(f"Video index {current_index} out of range (total {len(entries)})")
+'''
+    if old in text:
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def patch_x_multi_video_format_probe() -> None:
+    path = APP / "DOWN_AND_UP" / "yt_dlp_hook.py"
+    text = path.read_text(encoding="utf-8")
+
+    if "def _is_x_twitter_url(url: str) -> bool:" not in text:
+        if "from urllib.parse import urlparse\n" not in text:
+            text = text.replace(
+                "from URL_PARSERS.normalizer import normalize_douyin_url\n",
+                "from URL_PARSERS.normalizer import normalize_douyin_url\nfrom urllib.parse import urlparse\n",
+                1,
+            )
+        marker = "def get_video_formats(url, user_id=None, playlist_start_index=1, cookies_already_checked=False, use_proxy=False, playlist_end_index=None):\n"
+        helper = '''def _is_x_twitter_url(url: str) -> bool:
+    try:
+        host = urlparse(url).netloc.lower()
+    except Exception:
+        return False
+    return host in {"x.com", "twitter.com"} or host.endswith(".x.com") or host.endswith(".twitter.com")
+
+'''
+        if marker not in text:
+            raise RuntimeError(f"Expected get_video_formats marker not found in {path}")
+        text = text.replace(marker, helper + "\n" + marker, 1)
+        path.write_text(text, encoding="utf-8")
+
+    text = path.read_text(encoding="utf-8")
+    if "should_probe_all_x_media = _is_x_twitter_url(url)" not in text:
+        text = text.replace("        'playlist_items': playlist_items_str,    \n", "        'playlist_items': playlist_items_str,\n")
+        text = text.replace("    \n    ytdl_opts = {\n", "\n    ytdl_opts = {\n")
+        text = text.replace("    }\n    \n    # Add match_filter only if domain is not in NO_FILTER_DOMAINS\n", "    }\n\n    # Add match_filter only if domain is not in NO_FILTER_DOMAINS\n")
+        old = '''    else:
+        # Single item
+        playlist_items_str = str(playlist_start_index)
+
+    ytdl_opts = {
+'''
+        new = '''    else:
+        # Single item
+        playlist_items_str = str(playlist_start_index)
+    should_probe_all_x_media = _is_x_twitter_url(url) and playlist_end_index is None and playlist_start_index == 1
+
+    ytdl_opts = {
+'''
+        if old not in text:
+            raise RuntimeError(f"Expected playlist_items insertion point not found in {path}")
+        text = text.replace(old, new, 1)
+
+        old = '''        'extract_flat': False,
+        'simulate': True,
+        'playlist_items': playlist_items_str,
+        'extractor_args': {
+'''
+        new = '''        'extract_flat': False,
+        'simulate': True,
+        'extractor_args': {
+'''
+        if old not in text:
+            raise RuntimeError(f"Expected ytdl_opts playlist_items entry not found in {path}")
+        text = text.replace(old, new, 1)
+
+        old = '''        'check_certificate': False,
+        'live_from_start': True
+    }
+
+    # Add match_filter only if domain is not in NO_FILTER_DOMAINS
+'''
+        new = '''        'check_certificate': False,
+        'live_from_start': True
+    }
+    if should_probe_all_x_media:
+        logger.info("X/Twitter URL detected without explicit range; probing all media entries")
+    else:
+        ytdl_opts['playlist_items'] = playlist_items_str
+
+    # Add match_filter only if domain is not in NO_FILTER_DOMAINS
+'''
+        if old not in text:
+            raise RuntimeError(f"Expected ytdl_opts post block not found in {path}")
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
 def main() -> None:
     patch_limiter()
     patch_dashboard()
@@ -670,6 +848,8 @@ def main() -> None:
     patch_douyin_always_ask_error()
     patch_yuanbao_cookie_command()
     patch_tiktok_telegram_safe_format()
+    patch_x_multi_video_posts()
+    patch_x_multi_video_format_probe()
     print("Private hardening applied.")
 
 
