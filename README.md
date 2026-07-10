@@ -156,6 +156,54 @@ ssh -L 5555:127.0.0.1:5555 root@YOUR_VPS
 
 Then browse `http://localhost:5555`.
 
+### VPS Watchdog Loop
+
+For 24/7 VPS use, install the system-level watchdog loop. It checks Docker, the app container, NTP time sync, and whether the Telegram Pyrogram session actually started. If the bot hits Telegram time-drift errors or a recent Python/Telegram crash, it restarts only the `app` service.
+
+```bash
+sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watchdog
+
+sudo tee /etc/systemd/system/video-download-watchdog.service >/dev/null <<'EOF'
+[Unit]
+Description=VideoDownload bot watchdog
+Wants=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+Environment=APP_DIR=/opt/video-download-bot/vendor/tg-ytdlp-bot
+Environment=APP_SERVICE=app
+Environment=LOG_FILE=/var/log/video-download-watchdog.log
+ExecStart=/usr/local/bin/video-download-watchdog
+EOF
+
+sudo tee /etc/systemd/system/video-download-watchdog.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run VideoDownload bot watchdog every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Persistent=true
+Unit=video-download-watchdog.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now video-download-watchdog.timer
+```
+
+Check it:
+
+```bash
+systemctl list-timers --all video-download-watchdog.timer
+systemctl status video-download-watchdog.service --no-pager -l
+tail -f /var/log/video-download-watchdog.log
+```
+
 ## Cookies
 
 Optional cookie files go in:

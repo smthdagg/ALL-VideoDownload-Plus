@@ -177,6 +177,54 @@ ssh -L 5555:127.0.0.1:5555 root@YOUR_VPS
 http://localhost:5555
 ```
 
+### VPS 自检循环
+
+VPS 24 小时运行时，建议安装系统级 watchdog。它每分钟从外部检查 Docker、app 容器、系统时间同步，以及 Telegram Pyrogram session 是否真的启动。遇到 Telegram 时间漂移、近期 Python/Telegram 崩溃、容器停止等情况时，只重启 `app` 服务，不会重启整台 VPS。
+
+```bash
+sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watchdog
+
+sudo tee /etc/systemd/system/video-download-watchdog.service >/dev/null <<'EOF'
+[Unit]
+Description=VideoDownload bot watchdog
+Wants=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+Environment=APP_DIR=/opt/video-download-bot/vendor/tg-ytdlp-bot
+Environment=APP_SERVICE=app
+Environment=LOG_FILE=/var/log/video-download-watchdog.log
+ExecStart=/usr/local/bin/video-download-watchdog
+EOF
+
+sudo tee /etc/systemd/system/video-download-watchdog.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run VideoDownload bot watchdog every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Persistent=true
+Unit=video-download-watchdog.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now video-download-watchdog.timer
+```
+
+查看状态：
+
+```bash
+systemctl list-timers --all video-download-watchdog.timer
+systemctl status video-download-watchdog.service --no-pager -l
+tail -f /var/log/video-download-watchdog.log
+```
+
 ## Cookie 配置
 
 可选 cookie 文件放在：
