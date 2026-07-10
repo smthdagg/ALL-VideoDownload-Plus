@@ -30,6 +30,22 @@ English documentation: [README.md](README.md).
   - 优先选择 `H.264 + AAC + MP4`，避免 Telegram 播放无声或兼容异常。
 - 管理员可在 Telegram 里用 `/set_yuanbao_cookie` 更新 Yuanbao cookie。
 
+## 相对上游修改了什么
+
+上游 `tg-ytdlp-bot` 提供 Telegram bot、`yt-dlp` / `gallery-dl`、格式选择、上传流程和后台面板等核心能力。本项目保留上游作为下载底座，在此基础上做了面向个人私有部署的补丁和增强：
+
+- **默认私有使用**：配置模板围绕个人或小范围使用设计，通过 `ADMIN`、`PRIVATE_ALLOWED_USERS` 控制私聊权限，群组默认不开放。
+- **后台更安全**：Docker Compose 默认把 Dashboard 绑定到 `127.0.0.1:5555`，VPS 上建议用 SSH tunnel 打开，不直接暴露公网。
+- **抖音解析链路**：支持抖音分享文案、短链归一化；优先尝试移动端页面数据，再尝试可选的 `Evil0ctal/Douyin_TikTok_Download_API` sidecar、远程解析接口或 Reqable 抓包输出。
+- **视频号解析**：增加 `weixin.qq.com/sph/...` 解析；公开页面只有预览信息时，可用 Yuanbao cookie 作为 fallback。
+- **Telegram 内更新 cookie**：管理员可用 `/set_yuanbao_cookie`，直接在 Telegram 里回复 cookie 文件或 Cookie header 来更新元宝 cookie。
+- **TikTok Telegram 兼容格式**：优先选 `H.264 + AAC + MP4`，避免某些 TikTok 视频上传成功但 Telegram 播放无声或兼容异常。
+- **X/Twitter 多视频帖子**：一个 X/Twitter 帖子里如果有多个视频，补丁会探测全部 media entries，并按多视频任务下载，不再只取第一个。
+- **公开安全打包**：`scripts/package-for-vps.sh` 默认排除真实配置、cookies、Telegram session、日志、下载文件和私有压缩包；只有显式 `--include-private` 才会生成个人迁移包。
+- **VPS 自检循环**：`scripts/vps-watchdog.sh` 从系统层检查 Docker、app 容器、NTP 时间同步和 Pyrogram session；发现时间漂移或崩溃迹象时只重启 bot 服务。
+- **补丁化维护上游**：自定义修改集中在 `scripts/apply-private-hardening.py` 和 `scripts/templates/`，以后重新 clone 上游 bot 后可以重复打补丁。
+- **聚焦测试**：为自定义的抖音移动端解析、视频号解析保留了单元测试。
+
 ## 项目结构
 
 本仓库不直接提交完整上游 bot。初始化时会把上游项目 clone 到：
