@@ -25,6 +25,22 @@ This repository is a deployment wrapper and patch set around
 - TikTok Telegram compatibility mode: prefers H.264 + AAC MP4 to avoid silent or incompatible uploads.
 - Admin command for updating Yuanbao cookie from Telegram: `/set_yuanbao_cookie`.
 
+## Custom Enhancements Over Upstream
+
+The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl` integration, quality selection, upload flow, and dashboard. This repo keeps that engine and applies a focused private-deployment patch set:
+
+- **Private-by-default access control**: config template is oriented around one-person or small-circle use, with `ADMIN`, `PRIVATE_ALLOWED_USERS`, and group access disabled unless explicitly configured.
+- **Safer dashboard exposure**: Docker Compose binds the dashboard to `127.0.0.1:5555` by default, so VPS users can access it through SSH tunnel instead of exposing it to the public internet.
+- **Douyin resolver chain**: Douyin share text and short links are normalized; the resolver tries mobile page metadata first, then optional `Evil0ctal/Douyin_TikTok_Download_API`, then optional remote resolver or captured resolver output.
+- **WeChat Channels support**: adds a resolver for `weixin.qq.com/sph/...` links, including a Yuanbao cookie fallback when the public page only exposes preview metadata.
+- **Telegram admin cookie update**: `/set_yuanbao_cookie` lets an admin update Yuanbao cookies directly in Telegram by replying with a cookie file or raw Cookie header.
+- **TikTok Telegram-safe format preference**: prefers H.264 + AAC MP4 formats to avoid videos that upload successfully but play silently or poorly inside Telegram.
+- **X/Twitter multi-video posts**: when a single X/Twitter status contains multiple video entries, the patch probes all entries and downloads them as a multi-item post instead of only taking the first video.
+- **Public-safe packaging**: `scripts/package-for-vps.sh` excludes generated runtime config, cookies, Telegram session files, logs, downloads, and private archives by default; `--include-private` is explicit for personal migration only.
+- **VPS watchdog loop**: `scripts/vps-watchdog.sh` checks Docker, the app container, NTP time sync, and Pyrogram session startup, then restarts only the bot service when it detects time-drift or crash symptoms.
+- **Patch-driven upstream workflow**: local changes are encoded in `scripts/apply-private-hardening.py` and `scripts/templates/`, so the upstream bot can be re-cloned and patched reproducibly.
+- **Focused tests**: resolver tests cover custom Douyin mobile and WeChat Channels behavior.
+
 ## What This Repo Contains
 
 This repo does not vendor the full upstream bot into Git. `scripts/init-local.sh` clones or updates it under `vendor/tg-ytdlp-bot`, then applies local patches.
