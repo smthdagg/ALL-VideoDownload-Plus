@@ -11,7 +11,7 @@
 
 ## 中文说明
 
-ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它面向私人 VPS 部署，中文优先支持微信视频号、抖音、TikTok、Instagram、X、YouTube，并兼容 Bilibili、小红书及其他 `yt-dlp` / `gallery-dl` 平台。上游项目只作为下载引擎，本项目独立维护权限、解析增强、Cookie 工具、部署、安全和文档。
+ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它面向私人 VPS 部署，中文优先支持视某号、某音、TT、Instagram、X、YouTube，并兼容 8站、小某书及其他 `yt-dlp` / `gallery-dl` 平台。上游项目只作为下载引擎，本项目独立维护权限、解析增强、Cookie 工具、部署、安全和文档。
 
 直接把原始平台链接发送给 Bot，即可解析并下载视频、图片、图集、音频或 X 多视频帖子。Bot 支持中英文 Help 与菜单、`/lang` 语言切换、画质预设、Cookie 管理、用户申请审批、永久拉黑、Web 管理后台、自动清理和 VPS watchdog 自愈。
 
@@ -52,20 +52,20 @@ scripts/local-up.sh
 
 ### 中文支持平台清单
 
-| 平台 | 支持内容与链接示例 | 当前状态 |
+| 平台 | 支持内容 | 当前状态 |
 | --- | --- | --- |
-| 微信视频号 | `weixin.qq.com/sph/...`，公开视频号分享链接 | 重点适配；公开解析失败时支持 Yuanbao Cookie fallback |
-| 抖音 | `v.douyin.com/...`、`douyin.com/...`、完整分享文案 | 重点适配；短链归一化、移动端解析、可选 API sidecar |
-| TikTok | `tiktok.com/...`、`vt.tiktok.com/...` | 重点适配；有限挑战重试，优先 Telegram 兼容的 H.264 + AAC MP4 |
+| 视某号 | 视某号公开视频、预览卡片和媒体 | 重点适配；公开解析失败时支持 Yuanbao Cookie fallback |
+| 某音 | 视频、分享文案、短链和无水印媒体 | 重点适配；移动端解析、可选 API sidecar |
+| TT | 视频、音频流和兼容 Telegram 的媒体 | 重点适配；有限挑战重试，优先 H.264 + AAC + MP4 |
 | Instagram | 帖子、Reels、Stories、图片和图集 | 重点适配；私密或登录可见内容需要 Cookie |
-| X / Twitter | `x.com/.../status/...`、`twitter.com/...` | 重点适配；一个帖子中的多个视频会全部处理 |
-| YouTube | `youtube.com`、`youtu.be`、Shorts、播放列表 | 重点适配；使用 PO Token provider，可选 Cookie |
-| Bilibili | `bilibili.com/video/...`、`b23.tv/...` | 通用兼容；大会员或登录可见内容需要 Cookie |
-| 小红书 | `xiaohongshu.com/explore/...`、分享短链 | 通用兼容；视频、图片或图集取决于上游解析器 |
-| Facebook、Vimeo、Reddit、Twitch | 视频、Reels、Clip、帖子媒体 | 通用兼容；私密或受限内容需要对应平台登录态 |
-| 快手及其他站点 | 快手、SoundCloud、Pinterest 及大量 `yt-dlp` / `gallery-dl` 站点 | 实验性/通用兼容；以当前上游 extractor 结果为准 |
+| X / Twitter | 帖子、图片和一个帖子内的多个视频 | 重点适配；多媒体会全部处理 |
+| YouTube | 视频、音频、Shorts 和播放列表 | 重点适配；使用 PO Token provider，可选 Cookie |
+| 8站 | 视频和音频 | 通用兼容；登录可见或地区限制内容需要 Cookie |
+| 小某书 | 笔记中的视频、图片和图集 | 通用兼容；具体能力取决于上游解析器 |
+| Facebook、Vimeo、Reddit、Twitch | 视频、Reels、Clip 和帖子媒体 | 通用兼容；私密或受限内容需要对应平台登录态 |
+| 某手及其他站点 | 视频、音频、图片和图集 | 实验性/通用兼容；以当前上游 extractor 结果为准 |
 
-完整的链接格式、登录态要求、平台限制和 Cookie 说明见：[中文平台支持矩阵](README.zh-CN.md#支持的平台与链接类型)。平台改版、地区限制、限流和 Cookie 过期都可能造成暂时失败。
+完整的支持内容、登录态要求、平台限制和 Cookie 说明见：[中文平台支持矩阵](README.zh-CN.md#支持的平台与链接类型)。平台改版、地区限制、限流和 Cookie 过期都可能造成暂时失败。
 
 ### 中文 VPS 与迁移
 
@@ -81,9 +81,9 @@ sudo scripts/prepare-vps-migration.sh
 
 ## English
 
-ALL VideoDownload Plus is a private-first Telegram downloader focused on WeChat Channels / Weixin Video, Douyin, TikTok, Instagram, X/Twitter, and YouTube, with additional support for Bilibili, Xiaohongshu, and other compatible platforms. Send a platform link to the Bot and receive the downloaded media in Telegram.
+ALL VideoDownload Plus is a private-first Telegram downloader focused on 视某号, 某音, TT, Instagram, X/Twitter, and YouTube, with additional support for 8站, 小某书, and other compatible platforms. Send a platform link to the Bot and receive the downloaded media in Telegram.
 
-This release includes the complete bilingual Bot Help and command menu, private-user approval and blacklist controls, per-user cookies and preferences, X multi-video handling, WeChat Channels Yuanbao fallback, TikTok retry and audio/video compatibility, Douyin resolver integration, an authenticated Web administration panel, automatic cleanup, watchdog recovery, and reproducible VPS migration packages.
+This release includes the complete bilingual Bot Help and command menu, private-user approval and blacklist controls, per-user cookies and preferences, X multi-video handling, 视某号 Yuanbao fallback, TT retry and audio/video compatibility, 某音 resolver integration, an authenticated Web administration panel, automatic cleanup, watchdog recovery, and reproducible VPS migration packages.
 
 New users receive an access-request button with language selection. After approval,
 the Bot explains `/settings` -> Cookie and `/cookies_from_browser` for importing
@@ -93,46 +93,49 @@ the Telegram numeric ID and are not shared between users.
 ## Release Scope
 
 - **Bot experience:** English and Chinese Help, localized Telegram command menus, `/lang`, `/settings`, quality presets, cookie tools, and platform-specific guides.
-- **Platform work:** TikTok challenge retries with bounded backoff, Telegram-safe audio/video formats, X multi-video posts, Douyin mobile/API fallbacks, WeChat Channels public and Yuanbao resolvers, and Instagram gallery handling.
+- **Platform work:** TT challenge retries with bounded backoff, Telegram-safe audio/video formats, X multi-video posts, 某音 mobile/API fallbacks, 视某号 public and Yuanbao resolvers, and Instagram gallery handling.
 - **Private operations:** approval workflow, rate-limited access requests, permanent blacklist, per-user isolation, authenticated dashboard, log visibility, disk cleanup, watchdog recovery, and migration-safe backups.
 - **Maintenance model:** custom behavior is stored in tracked patch scripts and templates; generated upstream code stays reproducible and private runtime state never enters GitHub.
 
 This is an independent project and release with a deployment wrapper and patch set around
-[`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, Douyin handling, WeChat Channels handling, TikTok Telegram compatibility, and deployment scripts. This is a semi-original project built through custom development with Codex assistance: the mature downloader engine is upstream, while the deployment layer, privacy hardening, Chinese-platform resolvers, tests, and documentation are custom work in this repo.
+[`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, 某音 handling, 视某号 handling, TT Telegram compatibility, and deployment scripts. This is a semi-original project built through custom development with Codex assistance: the mature downloader engine is upstream, while the deployment layer, privacy hardening, Chinese-platform resolvers, tests, and documentation are custom work in this repo.
 
 中文完整版见 [README.zh-CN.md](README.zh-CN.md).
 
 ## Supported Platforms
 
-| Platform | Typical links | Notes |
+| Platform | Supported content | Notes |
 | --- | --- | --- |
-| WeChat Channels / Weixin Video | `weixin.qq.com/sph/...` | Public links are tried first; some links need a Yuanbao cookie fallback. |
-| Douyin | `v.douyin.com/...`, `douyin.com/...` | Share text and short links are normalized; optional cookie/API resolver support is available. |
-| TikTok | `tiktok.com/...` | Prefers Telegram-compatible H.264 + AAC MP4 when possible. |
-| Instagram | posts, reels, images | A valid cookie may be required for restricted media. |
-| X / Twitter | `x.com/...`, `twitter.com/...` | Supports posts containing multiple videos. |
-| YouTube | `youtube.com/...`, `youtu.be/...` | Uses the bundled PO-token provider and optional cookies. |
-| Other compatible sites | Bilibili, Xiaohongshu, and many `yt-dlp` / `gallery-dl` sites | Availability follows the platform and upstream extractor. |
+| 视某号 | Public videos, preview cards, and media | Public parsing first; some media needs a Yuanbao Cookie fallback. |
+| 某音 | Videos, shared text, short links, and direct media | Mobile/API resolver support is available. |
+| TT | Videos, audio streams, and Telegram-compatible media | Prefers H.264 + AAC + MP4 and bounded retries. |
+| Instagram | Posts, Reels, Stories, images, and galleries | A valid Cookie may be required for restricted media. |
+| X / Twitter | Posts, images, and multiple videos in one post | Multiple media entries are processed. |
+| YouTube | Videos, audio, Shorts, and playlists | Uses the bundled PO-token provider and optional Cookies. |
+| 8站 | Videos and audio | Availability follows the upstream extractor and access rules. |
+| 小某书 | Videos, images, and galleries in notes | Availability follows the upstream extractor. |
+| Facebook, Vimeo, Reddit, Twitch | Videos, Reels, Clips, and post media | Private or restricted media may require a platform Cookie. |
+| 某手 and other compatible sites | Videos, audio, images, and galleries | Experimental/general compatibility follows upstream support. |
 
 No downloader can guarantee permanent access to every platform. Platform changes, login requirements, regional restrictions, rate limits, expired cookies, and copyright rules can affect results.
 
 ## Features
 
-- Telegram bot downloads videos from TikTok, Douyin, WeChat Channels / Weixin Video, YouTube, Instagram, X/Twitter, Bilibili, Xiaohongshu, and many other `yt-dlp` / `gallery-dl` supported sites.
+- Telegram bot downloads videos from TT, 某音, 视某号, YouTube, Instagram, X/Twitter, 8站, 小某书, and many other `yt-dlp` / `gallery-dl` supported sites.
 - Complete Chinese / English UI for Bot messages, command menus, common errors, guides, the Web login, operations dashboard, and user administration. First contact follows the Telegram client language, while `/lang` switches it manually.
 - Private-use access control: admins and explicitly allowed Telegram user IDs only.
 - Local Docker workflow for testing before VPS deployment.
 - VPS-friendly Docker Compose stack.
 - Dashboard bound to `127.0.0.1` by default; use SSH tunneling instead of exposing it publicly.
-- Douyin support:
+- 某音 support:
   - normalizes shared text and short links;
   - uses mobile page metadata when possible;
   - can use the optional `Evil0ctal/Douyin_TikTok_Download_API` sidecar;
   - supports an optional remote resolver endpoint.
-- WeChat Channels support:
-  - handles public `weixin.qq.com/sph/...` links;
+- 视某号 support:
+  - handles public shared video links;
   - optional Yuanbao cookie fallback for links that only expose preview metadata.
-- TikTok Telegram compatibility mode: prefers H.264 + AAC MP4 to avoid silent or incompatible uploads, and automatically retries transient JavaScript challenge responses from TikTok.
+- TT Telegram compatibility mode: prefers H.264 + AAC MP4 to avoid silent or incompatible uploads, and automatically retries transient JavaScript challenge responses from TT.
 - Admin command for updating Yuanbao cookie from Telegram: `/set_yuanbao_cookie`.
 
 ## Custom Enhancements Over Upstream
@@ -143,10 +146,10 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **Safer dashboard exposure**: Docker Compose binds the dashboard to `127.0.0.1:5555` by default, so VPS users can access it through SSH tunnel instead of exposing it to the public internet.
 - **Two-level user administration**: frequent approval and blocking actions stay in Telegram, while the Web dashboard adds search, status filters, history, and a fuller management view.
 - **Complete bilingual UI**: Bot messages, menus, download status, common errors, Cookie guides, Web login, operations dashboard, and user administration support Chinese and English; the Web UI remembers the most recent choice.
-- **Douyin resolver chain**: Douyin share text and short links are normalized; the resolver tries mobile page metadata first, then optional `Evil0ctal/Douyin_TikTok_Download_API`, then optional remote resolver or captured resolver output.
-- **WeChat Channels support**: adds a resolver for `weixin.qq.com/sph/...` links, including a Yuanbao cookie fallback when the public page only exposes preview metadata.
+- **某音 resolver chain**: shared text and short links are normalized; the resolver tries mobile page metadata first, then optional `Evil0ctal/Douyin_TikTok_Download_API`, then optional remote resolver or captured resolver output.
+- **视某号 support**: adds a resolver for public shared video links, including a Yuanbao Cookie fallback when the public page only exposes preview metadata.
 - **Telegram admin cookie update**: `/set_yuanbao_cookie` lets an admin update Yuanbao cookies directly in Telegram by replying with a cookie file or raw Cookie header.
-- **TikTok Telegram-safe format preference**: prefers H.264 + AAC MP4 formats to avoid videos that upload successfully but play silently or poorly inside Telegram.
+- **TT Telegram-safe format preference**: prefers H.264 + AAC MP4 formats to avoid videos that upload successfully but play silently or poorly inside Telegram.
 - **Supported runtime baseline**: Docker uses Python 3.12, stable `yt-dlp 2026.08.19`, and `bgutil-ytdlp-pot-provider 1.3.2`. Global prerelease installation and the unused MoviePy 1.x dependency have been removed.
 - **X/Twitter multi-video posts**: when a single X/Twitter status contains multiple video entries, the patch probes all entries and downloads them as a multi-item post instead of only taking the first video.
 - **Public-safe packaging**: `scripts/package-for-vps.sh` excludes generated runtime config, cookies, Telegram session files, logs, downloads, and private archives by default; `--include-private` is explicit for personal migration only.
@@ -154,7 +157,7 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **Automatic storage protection**: `scripts/runtime-cleanup.sh` removes stale media and partial files while preserving user settings, cookies, logs, and caches. It runs every 30 minutes on the VPS, and removes the oldest eligible media first when disk usage exceeds 80%.
 - **User-facing storage warnings**: the Bot warns private users at 75% disk usage, at most once every six hours per user, and points them to `/clean`. The cleanup service removes media after the configured retention period and can enforce an optional `MAX_MEDIA_STORAGE_GB` cap.
 - **Patch-driven upstream workflow**: local changes are encoded in `scripts/apply-private-hardening.py` and `scripts/templates/`, so the upstream bot can be re-cloned and patched reproducibly.
-- **Focused tests**: resolver tests cover custom Douyin mobile and WeChat Channels behavior.
+- **Focused tests**: resolver tests cover custom 某音 mobile and 视某号 behavior.
 
 ## Chinese / English Interface
 
@@ -411,7 +414,7 @@ deploy/cookies/douyin.txt
 
 Use Netscape cookies.txt format unless a resolver explicitly documents a raw Cookie header.
 
-For WeChat Channels Yuanbao fallback, set the runtime environment value after `scripts/init-local.sh` has created `vendor/tg-ytdlp-bot/.env`:
+For the 视某号 Yuanbao fallback, set the runtime environment value after `scripts/init-local.sh` has created `vendor/tg-ytdlp-bot/.env`:
 
 ```env
 WECHAT_CHANNELS_YUANBAO_COOKIE=
@@ -420,9 +423,9 @@ WECHAT_CHANNELS_TIMEOUT=30
 
 You can update this at runtime by sending `/set_yuanbao_cookie` to the bot as an admin and replying with a cookie file or Cookie header.
 
-### Douyin Cookie Update
+### 某音 Cookie Update
 
-Douyin can often work without a personal cookie, but keeping a fresh cookie improves success rate when Douyin changes anti-bot checks.
+某音 can often work without a personal Cookie, but keeping a fresh Cookie improves success rate when platform anti-bot checks change.
 
 Supported input formats:
 
@@ -431,15 +434,15 @@ Supported input formats:
 
 Update steps:
 
-1. Log in to <https://www.douyin.com/> in your browser.
-2. Export Douyin cookies as Netscape cookies.txt, or copy a request `Cookie` header for `douyin.com`.
+1. Log in to the 某音 website in your browser.
+2. Export the platform cookies as Netscape cookies.txt, or copy a request `Cookie` header from the platform.
 3. Save it as:
 
    ```text
    deploy/cookies/douyin.txt
    ```
 
-4. Re-run initialization so the cookie is synchronized into the optional Douyin sidecar:
+4. Re-run initialization so the cookie is synchronized into the optional 某音 sidecar:
 
    ```bash
    scripts/init-local.sh
@@ -454,9 +457,9 @@ Notes:
 - Public-safe packages created by `scripts/package-for-vps.sh` exclude it.
 - Private migration packages created with `--include-private` can include it, so keep those archives private.
 
-### WeChat Channels Yuanbao Cookie
+### 视某号 Yuanbao Cookie
 
-Some WeChat Channels links only expose preview metadata from the public `weixin.qq.com/sph/...` page. For those links, this project can optionally use a logged-in Tencent Yuanbao web cookie as a fallback.
+Some 视某号 shared links only expose preview metadata from the public page. For those links, this project can optionally use a logged-in Tencent Yuanbao web Cookie as a fallback.
 
 Yuanbao entry:
 
@@ -468,7 +471,7 @@ Recommended workflow:
 1. Open <https://yuanbao.tencent.com/> in your browser and log in.
 2. Open browser developer tools, refresh the page, then find an authenticated request to `yuanbao.tencent.com`.
 3. Copy the request `Cookie` header, or export it as a cookie file.
-4. As an admin, open `/settings` -> Cookies -> `Update WeChat Channels Yuanbao Cookie`, or select `/set_yuanbao_cookie` from the Telegram command menu.
+4. As an admin, open `/settings` -> Cookies -> `Update 视某号 Yuanbao Cookie`, or select `/set_yuanbao_cookie` from the Telegram command menu.
 5. Paste the Cookie on the command line. For a long Cookie or a cookie file, send it first and then reply to that message with `/set_yuanbao_cookie`.
 6. Send `/set_yuanbao_cookie` without an argument whenever you need the complete capture and update guide in the currently selected Bot language.
 
@@ -576,8 +579,8 @@ Short version:
 
 - Core Telegram downloader: `upekshaip/tg-ytdlp-bot`.
 - Download engines: `yt-dlp`, `gallery-dl`, `ffmpeg`.
-- Optional Douyin/TikTok sidecar: `Evil0ctal/Douyin_TikTok_Download_API`.
-- Custom work in this repo: deployment wrapper, privacy hardening, custom Douyin/WeChat Channels resolvers, Telegram admin cookie update command, TikTok compatibility format selection, tests, documentation, and VPS/local operational workflow, developed with Codex assistance.
+- Optional 某音/TT sidecar: `Evil0ctal/Douyin_TikTok_Download_API`.
+- Custom work in this repo: deployment wrapper, privacy hardening, custom 某音/视某号 resolvers, Telegram admin cookie update command, TT compatibility format selection, tests, documentation, and VPS/local operational workflow, developed with Codex assistance.
 
 ## Legal and Safety Notice
 
