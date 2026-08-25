@@ -1,8 +1,25 @@
 # ALL VideoDownload Plus
 
+[![GitHub release](https://img.shields.io/github/v/release/smthdagg/ALL-VideoDownload-Plus?display_name=tag)](https://github.com/smthdagg/ALL-VideoDownload-Plus/releases)
+[![License](https://img.shields.io/github/license/smthdagg/ALL-VideoDownload-Plus)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](docs/DEPLOYMENT.zh-CN.md)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](docs/DEPLOYMENT.zh-CN.md)
+
 ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它重点支持微信视频号、抖音、TikTok、Instagram、X、YouTube，同时兼容 Bilibili、小红书以及其他由 `yt-dlp` / `gallery-dl` 支持的平台。用户只需要把原始平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
 
 当前版本包含完整中英文 Bot Help 与命令菜单、用户申请/审批/永久拉黑、独立 Cookie 与用户偏好、X 多视频帖子、视频号元宝解析、TikTok 音视频兼容与重试、抖音解析、带认证的 Web 管理后台、自动清理、watchdog 自愈以及可复现的 VPS 迁移备份。
+
+![用户申请与下载流程](docs/images/user-access-flow.svg)
+
+![系统架构](docs/images/system-architecture.svg)
+
+![存储清理策略](docs/images/storage-policy.svg)
+
+### Bot 界面预览
+
+中文 Help 将常用下载、Cookie 导入、画质、播放列表、清理和语言切换集中在一个面板中，方便新用户直接开始使用。
+
+![中文 Bot Help 预览](docs/images/bot-help-zh.png)
 
 ## 当前版本范围
 
