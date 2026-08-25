@@ -16,8 +16,8 @@ bgutil-ytdlp-pot-provider 1.3.2。
 ## 本地安装
 
 ```bash
-git clone https://github.com/smthdagg/VideoDownload.git
-cd VideoDownload
+git clone https://github.com/smthdagg/ALL-VideoDownload-Plus.git
+cd ALL-VideoDownload-Plus
 cp .env.example .env
 scripts/init-local.sh
 ```
@@ -40,7 +40,7 @@ scripts/local-down.sh
 ## 全新 VPS 安装
 
 ```bash
-git clone https://github.com/smthdagg/VideoDownload.git /opt/video-download-bot
+git clone https://github.com/smthdagg/ALL-VideoDownload-Plus.git /opt/video-download-bot
 cd /opt/video-download-bot
 cp .env.example .env
 cp deploy/config.local.py.example deploy/config.local.py

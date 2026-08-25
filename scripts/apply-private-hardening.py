@@ -1660,10 +1660,13 @@ def patch_yuanbao_cookie_menus() -> None:
 def patch_project_links() -> None:
     path = APP / "COMMANDS" / "settings_cmd.py"
     text = path.read_text(encoding="utf-8")
-    text = text.replace(
+    project_url = 'SETTINGS_DEV_GITHUB_BUTTON_MSG, url="https://github.com/smthdagg/ALL-VideoDownload-Plus"'
+    legacy_project_url = "https://github.com/smthdagg/" + "VideoDownload"
+    for old_url in (
         'SETTINGS_DEV_GITHUB_BUTTON_MSG, url="https://github.com/upekshaip/tg-ytdlp-bot"',
-        'SETTINGS_DEV_GITHUB_BUTTON_MSG, url="https://github.com/smthdagg/VideoDownload"',
-    )
+        f'SETTINGS_DEV_GITHUB_BUTTON_MSG, url="{legacy_project_url}"',
+    ):
+        text = text.replace(old_url, project_url)
     path.write_text(text, encoding="utf-8")
 
     magic_path = APP / "magic.py"
