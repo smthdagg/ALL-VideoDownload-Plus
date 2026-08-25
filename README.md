@@ -2,7 +2,7 @@
 
 ## 中文说明
 
-ALL VideoDownload Plus 是一个面向私人 VPS 部署的 Telegram 多平台下载 Bot。中文优先支持微信视频号、抖音、TikTok、Instagram、X、YouTube，并兼容 Bilibili、小红书及其他 `yt-dlp` / `gallery-dl` 平台。
+ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它面向私人 VPS 部署，中文优先支持微信视频号、抖音、TikTok、Instagram、X、YouTube，并兼容 Bilibili、小红书及其他 `yt-dlp` / `gallery-dl` 平台。上游项目只作为下载引擎，本项目独立维护权限、解析增强、Cookie 工具、部署、安全和文档。
 
 直接把原始平台链接发送给 Bot，即可解析并下载视频、图片、图集、音频或 X 多视频帖子。Bot 支持中英文 Help 与菜单、`/lang` 语言切换、画质预设、Cookie 管理、用户申请审批、永久拉黑、Web 管理后台、自动清理和 VPS watchdog 自愈。
 
@@ -17,6 +17,23 @@ scripts/local-up.sh
 ```
 
 首次运行前填写 `deploy/config.local.py` 中的 Telegram `API_ID`、`API_HASH`、Bot Token、管理员数字 ID 和后台登录凭据。Bot 内常用命令：`/help` 查看完整帮助，`/lang` 切换语言，`/settings` 设置画质/Cookie，`/format` 设置格式，`/clean` 清理个人临时文件。
+
+### 中文支持平台清单
+
+| 平台 | 支持内容与链接示例 | 当前状态 |
+| --- | --- | --- |
+| 微信视频号 | `weixin.qq.com/sph/...`，公开视频号分享链接 | 重点适配；公开解析失败时支持 Yuanbao Cookie fallback |
+| 抖音 | `v.douyin.com/...`、`douyin.com/...`、完整分享文案 | 重点适配；短链归一化、移动端解析、可选 API sidecar |
+| TikTok | `tiktok.com/...`、`vt.tiktok.com/...` | 重点适配；有限挑战重试，优先 Telegram 兼容的 H.264 + AAC MP4 |
+| Instagram | 帖子、Reels、Stories、图片和图集 | 重点适配；私密或登录可见内容需要 Cookie |
+| X / Twitter | `x.com/.../status/...`、`twitter.com/...` | 重点适配；一个帖子中的多个视频会全部处理 |
+| YouTube | `youtube.com`、`youtu.be`、Shorts、播放列表 | 重点适配；使用 PO Token provider，可选 Cookie |
+| Bilibili | `bilibili.com/video/...`、`b23.tv/...` | 通用兼容；大会员或登录可见内容需要 Cookie |
+| 小红书 | `xiaohongshu.com/explore/...`、分享短链 | 通用兼容；视频、图片或图集取决于上游解析器 |
+| Facebook、Vimeo、Reddit、Twitch | 视频、Reels、Clip、帖子媒体 | 通用兼容；私密或受限内容需要对应平台登录态 |
+| 快手及其他站点 | 快手、SoundCloud、Pinterest 及大量 `yt-dlp` / `gallery-dl` 站点 | 实验性/通用兼容；以当前上游 extractor 结果为准 |
+
+完整的链接格式、登录态要求、平台限制和 Cookie 说明见：[中文平台支持矩阵](README.zh-CN.md#支持的平台与链接类型)。平台改版、地区限制、限流和 Cookie 过期都可能造成暂时失败。
 
 ### 中文 VPS 与迁移
 
@@ -43,7 +60,7 @@ This release includes the complete bilingual Bot Help and command menu, private-
 - **Private operations:** approval workflow, rate-limited access requests, permanent blacklist, per-user isolation, authenticated dashboard, log visibility, disk cleanup, watchdog recovery, and migration-safe backups.
 - **Maintenance model:** custom behavior is stored in tracked patch scripts and templates; generated upstream code stays reproducible and private runtime state never enters GitHub.
 
-This repository is a deployment wrapper and patch set around
+This is an independent project and release with a deployment wrapper and patch set around
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, Douyin handling, WeChat Channels handling, TikTok Telegram compatibility, and deployment scripts. This is a semi-original project built through custom development with Codex assistance: the mature downloader engine is upstream, while the deployment layer, privacy hardening, Chinese-platform resolvers, tests, and documentation are custom work in this repo.
 
 中文完整版见 [README.zh-CN.md](README.zh-CN.md).

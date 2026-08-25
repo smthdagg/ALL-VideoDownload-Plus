@@ -1,6 +1,7 @@
 # Architecture
 
-ALL VideoDownload Plus is a deployment wrapper and patch layer around
+ALL VideoDownload Plus is an independent application release with a deployment
+wrapper and patch layer around
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot).
 The upstream project remains the Telegram bot engine. This repository keeps the
 local operational pieces small, auditable, and private by default.

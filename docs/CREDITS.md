@@ -1,7 +1,7 @@
 # ALL VideoDownload Plus: Credits and Original Work
 
-ALL VideoDownload Plus combines a mature open-source Telegram downloader with a focused
-private deployment and resolver layer. It is a semi-original project: the core
+ALL VideoDownload Plus is an independent project and release that combines a mature
+open-source Telegram downloader with a focused private deployment and resolver layer. It is a semi-original project: the core
 downloader engine is based on upstream open source work, while the private
 deployment workflow, Chinese-platform enhancements, tests, and documentation
 were custom-developed with Codex assistance.
@@ -43,5 +43,5 @@ were custom-developed with Codex assistance.
 
 ## License
 
-The upstream bot is distributed under GPL-3.0. This wrapper and patch set is
-published under the same GPL-3.0 license for compatibility.
+The upstream bot is distributed under GPL-3.0. This independent project includes
+the wrapper and patch set, and is published under the same GPL-3.0 license for compatibility.

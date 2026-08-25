@@ -4,7 +4,8 @@ Read this file before changing, testing, packaging, or deploying the project.
 
 ## Project Purpose
 
-This repository is the reproducible wrapper and patch layer for ALL VideoDownload Plus, built around
+This repository is the independent application and release for ALL VideoDownload Plus. It keeps a
+reproducible wrapper and patch layer around
 `upekshaip/tg-ytdlp-bot`. It adds private access control, Chinese/English UI,
 Douyin and WeChat Channels resolvers, TikTok reliability and Telegram-safe
 formats, X multi-video handling, an authenticated admin dashboard, operational
