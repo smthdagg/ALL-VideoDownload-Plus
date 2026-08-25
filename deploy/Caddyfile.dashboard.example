@@ -6,6 +6,12 @@ http://bot-admin.example.com {
     redir https://bot-admin.example.com:8443{uri} permanent
 }
 
+# Keep the private cookie-file service used by the app container.
+:80 {
+    root * /srv
+    file_server browse
+}
+
 https://bot-admin.example.com {
     reverse_proxy app:5555
 }
