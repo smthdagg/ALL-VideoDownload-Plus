@@ -256,6 +256,8 @@ journalctl -u video-download-runtime-cleanup.service -n 50 --no-pager
 
 Web 后台的“清理用户文件”现在会根据实际应用目录工作，不再使用旧的硬编码路径。Docker 各服务日志限制为每个文件 100 MB，最多保留 3 个轮转文件。
 
+宿主机专属操作会明确显示边界：重启服务、WireGuard 切换 IP、引擎升级和列表刷新需要在 VPS 主机上执行，不会在 app 容器内假装成功。用户审批、拉黑、历史记录、配置编辑、清理、系统指标和域名列表编辑仍可在登录后的后台使用。
+
 ```bash
 sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watchdog
 

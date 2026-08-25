@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 
@@ -852,6 +853,83 @@ def patch_storage_cleanup() -> None:
 
 '''
     path.write_text(text[:start] + replacement + text[end + 1 :], encoding="utf-8")
+
+
+def patch_admin_operation_paths() -> None:
+    system_path = APP / "services" / "system_service.py"
+    text = system_path.read_text(encoding="utf-8")
+    text = text.replace(
+        '"password": getattr(Config, "PROXY_PASSWORD", ""),',
+        '"has_password": bool(getattr(Config, "PROXY_PASSWORD", "")),\n            "password": "",',
+        1,
+    )
+    text = text.replace(
+        '"password": getattr(Config, "PROXY_2_PASSWORD", ""),',
+        '"has_password": bool(getattr(Config, "PROXY_2_PASSWORD", "")),\n            "password": "",',
+        1,
+    )
+    text = text.replace(
+        '"password": getattr(Config, "DASHBOARD_PASSWORD", ""),  # Don\'t expose the password in the API',
+        '"password": "",\n            "has_password": bool(getattr(Config, "DASHBOARD_PASSWORD", ""))',
+        1,
+    )
+
+    text = re.sub(
+        r"def restart_service\(\) -> Dict\[str, Any\]:.*?(?=\ndef update_engines)",
+        '''def restart_service() -> Dict[str, Any]:
+    """Host-level restart is intentionally unavailable inside the app container."""
+    return {"status": "error", "message": "Restart must be performed from the VPS host."}
+''',
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
+    text = re.sub(
+        r"def update_engines\(\) -> Dict\[str, Any\]:.*?(?=\ndef cleanup_user_files)",
+        '''def update_engines() -> Dict[str, Any]:
+    """Update engines only when an updater exists in this deployment."""
+    script_path = Path(__file__).resolve().parent.parent / "engines_updater.sh"
+    if not script_path.is_file():
+        return {"status": "error", "message": "Engine updater is not installed in this deployment."}
+    return {"status": "error", "message": "Engine updates must be run from the deployment host."}
+''',
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
+    text = re.sub(
+        r"def update_lists\(\) -> Dict\[str, Any\]:.*?(?=\ndef get_config_settings)",
+        '''def update_lists() -> Dict[str, Any]:
+    """List updates require the deployment host and are not run in-container."""
+    return {"status": "error", "message": "List updates must be run from the deployment host."}
+''',
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
+    text = re.sub(
+        r"def rotate_ip\(\) -> Dict\[str, Any\]:.*?(?=\ndef restart_service)",
+        '''def rotate_ip() -> Dict[str, Any]:
+    """WireGuard control requires the VPS host, not the app container."""
+    return {"status": "error", "message": "IP rotation must be performed from the VPS host."}
+''',
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
+    system_path.write_text(text, encoding="utf-8")
+
+    lists_path = APP / "services" / "lists_service.py"
+    lists_text = lists_path.read_text(encoding="utf-8")
+    lists_text = lists_text.replace(
+        '        script_path = "/root/Telegram/tg-ytdlp-bot/script.sh"',
+        '        script_path = Path(__file__).resolve().parent.parent / "script.sh"\n'
+        '        if not script_path.is_file():\n'
+        '            return {"status": "error", "message": "List updater is not installed in this deployment."}',
+        1,
+    )
+    lists_text = lists_text.replace('["bash", script_path],', '["bash", str(script_path)],', 1)
+    lists_path.write_text(lists_text, encoding="utf-8")
 def patch_compose() -> None:
     path = APP / "docker-compose.yml"
     replace_once(
@@ -1737,6 +1815,7 @@ def main() -> None:
     patch_bot_i18n()
     patch_dashboard()
     patch_storage_cleanup()
+    patch_admin_operation_paths()
     patch_compose()
     patch_dockerfile()
     patch_firebase_local_mode()
