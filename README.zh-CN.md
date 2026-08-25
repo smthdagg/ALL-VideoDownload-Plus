@@ -1,6 +1,15 @@
-# Video Download Bot System
+# ALL VideoDownload Plus
 
-Video Download Bot System 是一个适合个人自部署的 Telegram 下载 Bot，重点支持微信视频号、抖音、TikTok、Instagram、X、YouTube，同时兼容 Bilibili、小红书以及其他支持良好的平台。用户只需要把平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
+ALL VideoDownload Plus 是一个适合个人自部署的 Telegram 下载 Bot，重点支持微信视频号、抖音、TikTok、Instagram、X、YouTube，同时兼容 Bilibili、小红书以及其他支持良好的平台。用户只需要把平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
+
+当前版本包含完整中英文 Bot Help 与命令菜单、用户申请/审批/永久拉黑、独立 Cookie 与用户偏好、X 多视频帖子、视频号元宝解析、TikTok 音视频兼容与重试、抖音解析、带认证的 Web 管理后台、自动清理、watchdog 自愈以及可复现的 VPS 迁移备份。
+
+## 当前版本范围
+
+- **Bot 使用体验：**中英文 Help、Telegram 本地化命令菜单、`/lang`、`/settings`、画质预设、Cookie 工具和平台专项向导。
+- **平台能力：**TikTok 有界重试与 Telegram 音视频兼容格式、X 多视频帖子、抖音移动端/API fallback、视频号公开接口与 Yuanbao 解析、Instagram 图集处理。
+- **私人部署能力：**用户申请、频率限制、审批、永久拉黑、用户隔离、认证后台、日志查看、磁盘清理、watchdog 自愈和迁移备份。
+- **维护方式：**自研行为统一保存在受 Git 跟踪的补丁脚本和模板中，上游生成代码可重复生成，运行时私密数据不会进入 GitHub。
 
 本项目不是从零重写下载器，而是基于
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot)
@@ -280,7 +289,7 @@ sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watch
 
 sudo tee /etc/systemd/system/video-download-watchdog.service >/dev/null <<'EOF'
 [Unit]
-Description=Video Download Bot System watchdog
+Description=ALL VideoDownload Plus watchdog
 Wants=docker.service
 After=docker.service network-online.target
 
@@ -294,7 +303,7 @@ EOF
 
 sudo tee /etc/systemd/system/video-download-watchdog.timer >/dev/null <<'EOF'
 [Unit]
-Description=Run Video Download Bot System watchdog every minute
+Description=Run ALL VideoDownload Plus watchdog every minute
 
 [Timer]
 OnBootSec=2min

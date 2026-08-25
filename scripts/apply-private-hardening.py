@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -110,6 +111,26 @@ def patch_bot_i18n() -> None:
     if language_block not in extractor_text:
         extractor_text = extractor_text.replace(language_marker, language_block, 1)
     extractor_path.write_text(extractor_text, encoding="utf-8")
+
+    override_path = ROOT / "scripts" / "templates" / "messages_EN_overrides.py"
+    override_values = {}
+    exec(override_path.read_text(encoding="utf-8"), {}, override_values)
+    messages_en_path = APP / "CONFIG" / "LANGUAGES" / "messages_EN.py"
+    messages_en_text = messages_en_path.read_text(encoding="utf-8")
+    for key in ("URL_EXTRACTOR_WELCOME_MSG", "HELP_MSG"):
+        tree = ast.parse(messages_en_text)
+        assignment = next(
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == key for target in node.targets)
+        )
+        lines = messages_en_text.splitlines(keepends=True)
+        start = sum(len(line) for line in lines[: assignment.lineno - 1])
+        end = sum(len(line) for line in lines[: assignment.end_lineno])
+        replacement = f"    {key} = {override_values[key]!r}\n"
+        messages_en_text = messages_en_text[:start] + replacement + messages_en_text[end:]
+    messages_en_path.write_text(messages_en_text, encoding="utf-8")
 
     limiter_path = APP / "HELPERS" / "limitter.py"
     limiter_text = limiter_path.read_text(encoding="utf-8")
@@ -658,6 +679,14 @@ async def api_private_user_action(action: str, payload: PrivateUserActionRequest
         '<p>Edit domain lists from CONFIG/domains.py</p>',
         '<p data-i18n="lists.domains_hint">Edit domain lists from CONFIG/domains.py</p>',
     )
+    dashboard_html = dashboard_html.replace(
+        'data-i18n="header.title">Bot statistics',
+        'data-i18n="header.title">ALL VideoDownload Plus statistics',
+    )
+    dashboard_html = dashboard_html.replace(
+        'data-i18n="header.subtitle">Online dashboard for monitoring Telegram bot activity.',
+        'data-i18n="header.subtitle">ALL VideoDownload Plus operations dashboard.',
+    )
     for minutes in (5, 15, 30, 60):
         dashboard_html = dashboard_html.replace(
             f'<option value="{minutes}">{minutes} min</option>',
@@ -826,6 +855,14 @@ async def api_private_user_action(action: str, payload: PrivateUserActionRequest
     }
     for old, new in dashboard_replacements.items():
         dashboard_js = dashboard_js.replace(old, new)
+    dashboard_js = dashboard_js.replace(
+        '"header.title": "Bot statistics"',
+        '"header.title": "ALL VideoDownload Plus statistics"',
+    )
+    dashboard_js = dashboard_js.replace(
+        '"header.subtitle": "Online dashboard for monitoring Telegram bot activity."',
+        '"header.subtitle": "ALL VideoDownload Plus operations dashboard."',
+    )
     dashboard_script.write_text(dashboard_js, encoding="utf-8")
     replace_once(
         path,

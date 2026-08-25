@@ -8,7 +8,7 @@ install -m 0755 "$SCRIPT_DIR/runtime-cleanup.sh" /usr/local/bin/video-download-r
 
 cat >/etc/systemd/system/video-download-runtime-cleanup.service <<EOF
 [Unit]
-Description=Clean stale Video Download Bot runtime media
+Description=Clean stale ALL VideoDownload Plus runtime media
 After=docker.service
 
 [Service]
@@ -19,7 +19,7 @@ EOF
 
 cat >/etc/systemd/system/video-download-runtime-cleanup.timer <<'EOF'
 [Unit]
-Description=Run Video Download Bot runtime cleanup every 30 minutes
+Description=Run ALL VideoDownload Plus runtime cleanup every 30 minutes
 
 [Timer]
 OnBootSec=10min

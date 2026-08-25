@@ -2,7 +2,7 @@ const state = { snapshot: null, filter: "pending", search: "", busy: false };
 
 const translations = {
     zh: {
-        brand: "Telegram 下载 Bot", title: "用户管理", dashboard: "运行面板", logout: "退出登录",
+        brand: "ALL VideoDownload Plus", title: "用户管理", dashboard: "运行面板", logout: "退出登录",
         pending: "待审批", dynamic: "动态授权", static: "固定授权", blacklist: "永久黑名单", admins: "管理员",
         add_label: "直接授权 Telegram 数字 ID", add_placeholder: "例如 123456789", add: "添加用户",
         search: "搜索", search_placeholder: "姓名、用户名或数字 ID", allowed: "已授权", blacklist_short: "黑名单", all: "全部",
@@ -22,7 +22,7 @@ const translations = {
         nav_aria: "后台导航", language_aria: "语言切换", summary_aria: "用户数量概览", tools_aria: "用户管理工具", status_aria: "用户状态", close_aria: "关闭",
     },
     en: {
-        brand: "Telegram Download Bot", title: "User management", dashboard: "Operations", logout: "Log out",
+        brand: "ALL VideoDownload Plus", title: "User management", dashboard: "Operations", logout: "Log out",
         pending: "Pending", dynamic: "Dynamic access", static: "Configured access", blacklist: "Permanent blacklist", admins: "Administrators",
         add_label: "Authorize a numeric Telegram ID", add_placeholder: "For example 123456789", add: "Add user",
         search: "Search", search_placeholder: "Name, username, or numeric ID", allowed: "Authorized", blacklist_short: "Blacklist", all: "All",
@@ -51,7 +51,7 @@ function applyLanguage() {
     document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => { element.placeholder = ui(element.dataset.i18nPlaceholder); });
     document.querySelectorAll("[data-i18n-aria]").forEach((element) => { element.setAttribute("aria-label", ui(element.dataset.i18nAria)); });
     document.querySelectorAll("[data-ui-language]").forEach((button) => button.classList.toggle("active", button.dataset.uiLanguage === currentLanguage));
-    document.title = `${ui("title")} - Telegram Download Bot`;
+    document.title = `${ui("title")} - ALL VideoDownload Plus`;
     render();
 }
 

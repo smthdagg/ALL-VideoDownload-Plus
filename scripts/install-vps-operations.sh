@@ -18,7 +18,7 @@ install -m 0755 "$PROJECT_DIR/scripts/vps-watchdog.sh" /usr/local/bin/video-down
 
 cat >/etc/systemd/system/video-download-watchdog.service <<EOF
 [Unit]
-Description=Video Download Bot System watchdog
+Description=ALL VideoDownload Plus watchdog
 Wants=docker.service
 After=docker.service network-online.target
 
@@ -32,7 +32,7 @@ EOF
 
 cat >/etc/systemd/system/video-download-watchdog.timer <<'EOF'
 [Unit]
-Description=Run Video Download Bot System watchdog every minute
+Description=Run ALL VideoDownload Plus watchdog every minute
 
 [Timer]
 OnBootSec=2min

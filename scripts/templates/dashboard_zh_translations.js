@@ -1,8 +1,8 @@
     // PRIVATE_ZH_TRANSLATIONS_START
     translations.zh = {
         ...translations.en,
-        "header.title": "Bot 运行统计",
-        "header.subtitle": "监控 Telegram 下载 Bot 的运行和用户活动。",
+        "header.title": "ALL VideoDownload Plus 运行统计",
+        "header.subtitle": "监控 ALL VideoDownload Plus 的运行和用户活动。",
         "tabs.activity": "活动",
         "tabs.users": "用户",
         "tabs.content": "内容",

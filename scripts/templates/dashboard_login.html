@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>登录 - Telegram 下载 Bot 后台</title>
+    <title>登录 - ALL VideoDownload Plus</title>
     <link rel="stylesheet" href="/static/private-users.css">
     <style>
         .login-page { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: #eef3f0; }
@@ -25,7 +25,7 @@
             <button type="button" data-login-language="en">EN</button>
         </div>
         <header class="login-brand">
-            <p class="eyebrow" data-login-i18n="brand">Telegram 下载 Bot</p>
+        <p class="eyebrow" data-login-i18n="brand">ALL VideoDownload Plus</p>
             <h1 id="login-title" data-login-i18n="title">管理后台登录</h1>
             <p data-login-i18n="hint">使用配置文件中的后台用户名和密码，不是 Telegram 用户名或数字 ID。</p>
         </header>
@@ -45,8 +45,8 @@
 </main>
 <script>
 const loginTranslations = {
-    zh: { brand: "Telegram 下载 Bot", title: "管理后台登录", hint: "使用配置文件中的后台用户名和密码，不是 Telegram 用户名或数字 ID。", username: "后台用户名", password: "后台密码", login: "登录", logging: "正在登录...", invalid: "用户名或密码错误。", network: "无法连接后台，请稍后重试。", language: "语言切换" },
-    en: { brand: "Telegram Download Bot", title: "Administration login", hint: "Use the dashboard username and password from configuration, not a Telegram username or numeric ID.", username: "Dashboard username", password: "Dashboard password", login: "Log in", logging: "Logging in...", invalid: "Invalid username or password.", network: "Could not connect to the dashboard. Try again later.", language: "Language switch" },
+    zh: { brand: "ALL VideoDownload Plus", title: "管理后台登录", hint: "使用配置文件中的后台用户名和密码，不是 Telegram 用户名或数字 ID。", username: "后台用户名", password: "后台密码", login: "登录", logging: "正在登录...", invalid: "用户名或密码错误。", network: "无法连接后台，请稍后重试。", language: "语言切换" },
+    en: { brand: "ALL VideoDownload Plus", title: "Administration login", hint: "Use the dashboard username and password from configuration, not a Telegram username or numeric ID.", username: "Dashboard username", password: "Dashboard password", login: "Log in", logging: "Logging in...", invalid: "Invalid username or password.", network: "Could not connect to the dashboard. Try again later.", language: "Language switch" },
 };
 let loginLanguage = localStorage.getItem("adminLanguage") || (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");
 const loginText = (key) => loginTranslations[loginLanguage][key];
@@ -55,7 +55,7 @@ function applyLoginLanguage() {
     document.querySelectorAll("[data-login-i18n]").forEach((element) => { element.textContent = loginText(element.dataset.loginI18n); });
     document.querySelectorAll("[data-login-language]").forEach((button) => button.classList.toggle("active", button.dataset.loginLanguage === loginLanguage));
     document.getElementById("login-language-switch").setAttribute("aria-label", loginText("language"));
-    document.title = `${loginText("title")} - Telegram Download Bot`;
+    document.title = `${loginText("title")} - ALL VideoDownload Plus`;
 }
 document.querySelectorAll("[data-login-language]").forEach((button) => button.addEventListener("click", () => {
     loginLanguage = button.dataset.loginLanguage;
