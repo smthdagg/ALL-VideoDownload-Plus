@@ -5,9 +5,9 @@
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](docs/DEPLOYMENT.zh-CN.md)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](docs/DEPLOYMENT.zh-CN.md)
 
-ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它重点支持微信视频号、抖音、TikTok、Instagram、X、YouTube，同时兼容 Bilibili、小红书以及其他由 `yt-dlp` / `gallery-dl` 支持的平台。用户只需要把原始平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
+ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它重点支持视某号、某音、TT、Instagram、X、YouTube，同时兼容 8站、小某书以及其他由 `yt-dlp` / `gallery-dl` 支持的平台。用户只需要把原始平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
 
-当前版本包含完整中英文 Bot Help 与命令菜单、用户申请/审批/永久拉黑、独立 Cookie 与用户偏好、X 多视频帖子、视频号元宝解析、TikTok 音视频兼容与重试、抖音解析、带认证的 Web 管理后台、自动清理、watchdog 自愈以及可复现的 VPS 迁移备份。
+当前版本包含完整中英文 Bot Help 与命令菜单、用户申请/审批/永久拉黑、独立 Cookie 与用户偏好、X 多视频帖子、视某号元宝解析、TT 音视频兼容与重试、某音解析、带认证的 Web 管理后台、自动清理、watchdog 自愈以及可复现的 VPS 迁移备份。
 
 ![用户申请与下载流程](docs/images/user-access-flow.svg)
 
@@ -34,13 +34,13 @@ ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目�
 ## 当前版本范围
 
 - **Bot 使用体验：**中英文 Help、Telegram 本地化命令菜单、`/lang`、`/settings`、画质预设、Cookie 工具和平台专项向导。
-- **平台能力：**TikTok 有界重试与 Telegram 音视频兼容格式、X 多视频帖子、抖音移动端/API fallback、视频号公开接口与 Yuanbao 解析、Instagram 图集处理。
+- **平台能力：**TT 有界重试与 Telegram 音视频兼容格式、X 多视频帖子、某音移动端/API fallback、视某号公开接口与 Yuanbao 解析、Instagram 图集处理。
 - **私人部署能力：**用户申请、频率限制、审批、永久拉黑、用户隔离、认证后台、日志查看、磁盘清理、watchdog 自愈和迁移备份。
 - **维护方式：**自研行为统一保存在受 Git 跟踪的补丁脚本和模板中，上游生成代码可重复生成，运行时私密数据不会进入 GitHub。
 
 本项目不是从零重写下载器，而是以
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot)
-作为下载引擎依赖，再独立维护产品配置、补丁层、中文平台适配、权限管理、Cookie 工具、部署脚本、测试和文档。上游 bot 负责 Telegram、`yt-dlp`、`gallery-dl`、上传、格式选择等底层能力；本项目负责私有化部署、抖音/视频号增强、TikTok Telegram 兼容、VPS 运维和安全默认值。这个项目属于“半原创”：成熟下载底座借鉴/复用上游开源项目，定制功能是在 Codex 协助下开发完成。
+作为下载引擎依赖，再独立维护产品配置、补丁层、中文平台适配、权限管理、Cookie 工具、部署脚本、测试和文档。上游 bot 负责 Telegram、`yt-dlp`、`gallery-dl`、上传、格式选择等底层能力；本项目负责私有化部署、某音/视某号增强、TT Telegram 兼容、VPS 运维和安全默认值。这个项目属于“半原创”：成熟下载底座借鉴/复用上游开源项目，定制功能是在 Codex 协助下开发完成。
 
 English documentation: [README.md](README.md).
 
@@ -48,27 +48,23 @@ English documentation: [README.md](README.md).
 
 下面的“重点适配”表示本项目对该平台增加了专门代码或运行配置；“通用兼容”表示主要依赖上游 `yt-dlp` / `gallery-dl` 的解析器。平台改版、地区限制、登录验证、限流和 Cookie 过期都可能影响实际结果。
 
-| 平台 | 常见链接或内容 | 当前能力 | 登录态 / 注意事项 |
+| 平台 | 支持内容 | 当前能力 | 登录态 / 注意事项 |
 | --- | --- | --- | --- |
-| 微信视频号 / WeChat Channels | `weixin.qq.com/sph/...` | **重点适配**；公开链接解析、预览卡片识别、Yuanbao fallback。 | 公开接口只返回预览信息时，需要有效的 Tencent Yuanbao Cookie；Cookie 由管理员更新。 |
-| 抖音 / Douyin | `v.douyin.com/...`、`douyin.com/...`、分享文案 | **重点适配**；分享文本提取、短链归一化、移动端页面解析、可选 API sidecar。 | 通常可不带 Cookie；风控或地区变化时可配置 Douyin Cookie / sidecar。 |
-| TikTok | `www.tiktok.com/@user/video/...`、`vt.tiktok.com/...` | **重点适配**；视频下载、有限挑战重试、Telegram 兼容音视频格式。 | 某些地区或账号内容需要 TikTok Cookie；优先 H.264 + AAC + MP4，减少 Telegram 无声问题。 |
-| Instagram | `instagram.com/p/...`、`/reel/...`、`/stories/...` | **重点适配**；视频、图片、Reels 和图集。 | 私密、登录可见或受限内容需要 Instagram Cookie；Story 还受账号权限影响。 |
-| X / Twitter | `x.com/.../status/...`、`twitter.com/...` | **重点适配**；单视频、图片，以及同一帖子内多个视频。 | 受限帖子可能需要 X Cookie；多个媒体会按多项目任务处理。 |
-| YouTube | `youtube.com/watch?v=...`、`youtu.be/...`、Shorts、播放列表 | **重点适配**；视频、音频、Shorts，使用 PO Token provider。 | 年龄限制、会员内容或地区限制可能需要 YouTube Cookie；播放列表会产生多个任务。 |
-| 哔哩哔哩 / Bilibili | `bilibili.com/video/...`、`b23.tv/...` | **通用兼容**；视频、音频，具体清晰度由上游解析器决定。 | 大会员、登录可见或地区限制内容需要 Bilibili Cookie。 |
-| 小红书 / Xiaohongshu | `xiaohongshu.com/explore/...`、分享短链 | **通用兼容**；笔记中的视频或图片，依赖上游解析能力。 | 登录可见笔记需要 Cookie；分享文案中的附加文字应保留完整链接。 |
-| Facebook | `facebook.com/.../videos/...`、Reels | **通用兼容**；公开视频或可访问媒体。 | 私密、登录可见和部分 Reels 需要 Facebook Cookie。 |
-| Vimeo | `vimeo.com/...` | **通用兼容**；公开视频。 | 私密、密码保护或嵌入限制视频通常无法直接解析，除非提供有效登录态。 |
-| Reddit | `reddit.com/r/.../comments/...`、`v.redd.it/...` | **通用兼容**；帖子媒体和视频。 | 被删除、私密社区或地区受限内容无法下载；音视频可能需要合并。 |
-| Twitch | `twitch.tv/videos/...`、Clip | **通用兼容**；公开视频或 Clip。 | 直播回放可用性受平台限制，订阅/地区内容需要对应登录态。 |
-| 快手 / Kuaishou | 快手分享链接 | **实验性通用兼容**；是否成功取决于当前上游 extractor。 | 平台风控较强，可能需要 Cookie；不作为当前核心平台承诺。 |
-| 音频 / 图集站点 | SoundCloud、Pinterest 等 | **通用兼容**；由 `yt-dlp` / `gallery-dl` 支持的媒体类型。 | 具体站点、内容类型和 Cookie 要求以解析器结果为准。 |
+| 视某号 | 公开视频、预览卡片和媒体 | **重点适配**；公开解析与 Yuanbao fallback。 | 部分内容需要有效 Cookie。 |
+| 某音 | 视频、分享文案、短链和无水印媒体 | **重点适配**；移动端解析与可选 API sidecar。 | 通常可不带 Cookie，风控变化时可配置 Cookie。 |
+| TT | 视频、音频流和 Telegram 兼容媒体 | **重点适配**；有限挑战重试与格式兼容。 | 优先 H.264 + AAC + MP4。 |
+| Instagram | 帖子、Reels、Stories、图片和图集 | **重点适配**；支持视频、图片与图集。 | 私密或登录可见内容需要 Cookie。 |
+| X / Twitter | 帖子、图片和一个帖子内的多个视频 | **重点适配**；多媒体会全部处理。 | 受限帖子可能需要 Cookie。 |
+| YouTube | 视频、音频、Shorts 和播放列表 | **重点适配**；使用 PO Token provider。 | 年龄、会员或地区限制可能需要 Cookie。 |
+| 8站 | 视频和音频 | **通用兼容**；具体清晰度取决于上游解析器。 | 登录可见或地区限制内容需要 Cookie。 |
+| 小某书 | 笔记中的视频、图片和图集 | **通用兼容**；依赖上游解析器。 | 登录可见内容需要 Cookie。 |
+| Facebook、Vimeo、Reddit、Twitch | 视频、Reels、Clip 和帖子媒体 | **通用兼容**；依赖上游解析器。 | 私密或受限内容需要对应 Cookie。 |
+| 某手及其他站点 | 视频、音频、图片和图集 | **实验性/通用兼容**；以当前 extractor 结果为准。 | 具体能力取决于平台规则。 |
 
 ### 如何理解支持范围
 
-- **重点适配平台**：微信视频号、抖音、TikTok、Instagram、X/Twitter、YouTube；项目有专门的解析、格式选择、重试或 Cookie 流程，并在本地/VPS 回归测试中优先验证。
-- **通用兼容平台**：Bilibili、小红书、Facebook、Vimeo、Reddit、Twitch、快手和其他 `yt-dlp` / `gallery-dl` 站点。项目不会为每个上游站点维护独立破解逻辑，成功率随上游 extractor 和平台规则变化。
+- **重点适配平台**：视某号、某音、TT、Instagram、X/Twitter、YouTube；项目有专门的解析、格式选择、重试或 Cookie 流程，并在本地/VPS 回归测试中优先验证。
+- **通用兼容平台**：8站、小某书、Facebook、Vimeo、Reddit、Twitch、某手和其他 `yt-dlp` / `gallery-dl` 站点。项目不会为每个上游站点维护独立破解逻辑，成功率随上游 extractor 和平台规则变化。
 - **链接格式**：优先发送平台原始 URL 或完整分享文案；不要只发送失效的预览卡片、截图或已经过期的 CDN 直链。
 - **Cookie 规则**：Cookie 是对应平台的登录态，不是通用 Cookie。管理员可以在 Bot 的 Cookie 菜单中更新；每个平台单独保存，绝不会上传到 GitHub 的公开发布包。
 - **下载结果**：视频、音频、图片、图集和多视频帖子会按平台能力返回；Telegram 的文件大小、时长和格式限制仍然适用。
@@ -79,24 +75,24 @@ English documentation: [README.md](README.md).
 
 - Telegram 内直接发送链接，bot 下载并回传视频。
 - Bot 和 Web 后台均支持中文 / English：首次私聊会按 Telegram 客户端语言自动选择，也可随时发送 `/lang` 手动切换；登录页、运行面板、用户管理、按钮、常见错误和使用向导会同步切换。
-- 主要支持 TikTok、抖音、微信视频号 / WeChat Channels、YouTube、Instagram、X/Twitter、Bilibili、小红书，以及大量 `yt-dlp` / `gallery-dl` 支持的网站。
+- 主要支持 TT、某音、视某号、YouTube、Instagram、X/Twitter、8站、小某书，以及大量 `yt-dlp` / `gallery-dl` 支持的网站。
 - 默认私有使用：
   - 只有 `ADMIN` 和 `PRIVATE_ALLOWED_USERS` 可以私聊使用；
   - 群组默认关闭，除非显式加入 `ALLOWED_GROUP`。
 - 本地 Docker 测试，确认无误后部署到 VPS。
 - VPS Docker Compose 常驻运行。
 - Dashboard 默认只绑定 `127.0.0.1`，建议通过 SSH tunnel 查看，不直接暴露公网。
-- 抖音增强：
-  - 支持抖音分享文案、短链、`iesdouyin` 链接归一化；
+- 某音增强：
+  - 支持某音分享文案、短链和链接归一化；
   - 优先从移动端页面数据解析无水印直链；
   - 可选接入 `Evil0ctal/Douyin_TikTok_Download_API` sidecar；
   - 可选接入远程解析接口。
-- 视频号增强：
-  - 支持 `https://weixin.qq.com/sph/...`；
+- 视某号增强：
+  - 支持公开视频分享链接；
   - 可选使用 Yuanbao cookie 解析只返回预览信息的链接。
-- TikTok 兼容模式：
+- TT 兼容模式：
   - 优先选择 `H.264 + AAC + MP4`，避免 Telegram 播放无声或兼容异常。
-  - TikTok JavaScript 挑战出现临时响应错误时，Bot 会进行有限次数的自动重试。
+  - TT JavaScript 挑战出现临时响应错误时，Bot 会进行有限次数的自动重试。
 - 管理员可在 Telegram 里用 `/set_yuanbao_cookie` 更新 Yuanbao cookie。
 
 ## 相对上游修改了什么
@@ -107,17 +103,17 @@ English documentation: [README.md](README.md).
 - **后台更安全**：Docker Compose 默认把 Dashboard 绑定到 `127.0.0.1:5555`，VPS 上建议用 SSH tunnel 打开，不直接暴露公网。
 - **两层用户管理**：管理员可在 Bot 内完成审批、拒绝、授权、撤权和永久拉黑；Web 后台提供搜索、状态筛选、用户历史和更完整的操作界面。
 - **完整双语界面**：Bot 消息、命令菜单、设置、下载状态、常见错误、Cookie 向导，以及 Web 登录页、运行面板和用户管理页均提供中文 / English；Web 会记住最近选择的语言。
-- **抖音解析链路**：支持抖音分享文案、短链归一化；优先尝试移动端页面数据，再尝试可选的 `Evil0ctal/Douyin_TikTok_Download_API` sidecar、远程解析接口或 Reqable 抓包输出。
-- **视频号解析**：增加 `weixin.qq.com/sph/...` 解析；公开页面只有预览信息时，可用 Yuanbao cookie 作为 fallback。
+- **某音解析链路**：支持某音分享文案、短链归一化；优先尝试移动端页面数据，再尝试可选的 `Evil0ctal/Douyin_TikTok_Download_API` sidecar、远程解析接口或 Reqable 抓包输出。
+- **视某号解析**：增加公开视频分享解析；公开页面只有预览信息时，可用 Yuanbao Cookie 作为 fallback。
 - **Telegram 内更新 cookie**：管理员可用 `/set_yuanbao_cookie`，直接在 Telegram 里回复 cookie 文件或 Cookie header 来更新元宝 cookie。
-- **TikTok Telegram 兼容格式**：优先选 `H.264 + AAC + MP4`，避免某些 TikTok 视频上传成功但 Telegram 播放无声或兼容异常。
+- **TT Telegram 兼容格式**：优先选 `H.264 + AAC + MP4`，避免某些 TT 视频上传成功但 Telegram 播放无声或兼容异常。
 - **受支持的运行基线**：Docker 使用 Python 3.12、稳定版 `yt-dlp 2026.08.19` 和 `bgutil-ytdlp-pot-provider 1.3.2`；已取消全局预发布依赖安装，并移除未使用的 MoviePy 1.x。
 - **X/Twitter 多视频帖子**：一个 X/Twitter 帖子里如果有多个视频，补丁会探测全部 media entries，并按多视频任务下载，不再只取第一个。
 - **公开安全打包**：`scripts/package-for-vps.sh` 默认排除真实配置、cookies、Telegram session、日志、下载文件和私有压缩包；只有显式 `--include-private` 才会生成个人迁移包。
 - **VPS 自检循环**：`scripts/vps-watchdog.sh` 从系统层检查 Docker、app 容器、NTP 时间同步和 Pyrogram session；发现时间漂移或崩溃迹象时只重启 bot 服务。
 - **自动磁盘保护**：`scripts/runtime-cleanup.sh` 会清理过期媒体和下载残片，同时保留用户设置、Cookie、日志和缓存。VPS 上每 30 分钟运行一次，当磁盘使用率超过 80% 时会优先删除最旧的可清理媒体文件。
 - **补丁化维护上游**：自定义修改集中在 `scripts/apply-private-hardening.py` 和 `scripts/templates/`，以后重新 clone 上游 bot 后可以重复打补丁。
-- **聚焦测试**：为自定义的抖音移动端解析、视频号解析保留了单元测试。
+- **聚焦测试**：为自定义的某音移动端解析、视某号解析保留了单元测试。
 
 ## 中文 / English 界面
 
@@ -140,7 +136,7 @@ vendor/tg-ytdlp-bot
 会提交到 GitHub 的内容：
 
 - `scripts/`：初始化、打补丁、运行、打包脚本。
-- `scripts/templates/`：自定义抖音/视频号解析模块。
+- `scripts/templates/`：自定义某音/视某号解析模块。
 - `deploy/config.local.py.example`：安全配置模板。
 - `.env.example`：环境变量模板。
 - `tests/`：自定义解析器测试。
@@ -390,7 +386,7 @@ deploy/cookies/douyin.txt
 
 默认使用 Netscape cookies.txt 格式。
 
-视频号 Yuanbao fallback 可在 `scripts/init-local.sh` 生成的运行时环境文件里配置：
+视某号 Yuanbao fallback 可在 `scripts/init-local.sh` 生成的运行时环境文件里配置：
 
 ```env
 WECHAT_CHANNELS_YUANBAO_COOKIE=
@@ -399,9 +395,9 @@ WECHAT_CHANNELS_TIMEOUT=30
 
 也可以用管理员账号在 Telegram 里发送 `/set_yuanbao_cookie`，回复 cookie 文件或 Cookie header，即可运行时更新。
 
-### 抖音 Cookie 更新
+### 某音 Cookie 更新
 
-抖音很多链接可以不依赖本人 cookie，但抖音风控变化比较频繁，保持一个新的 cookie 可以提高解析成功率。
+某音很多内容可以不依赖本人 Cookie，但平台风控变化比较频繁，保持一个新的 Cookie 可以提高解析成功率。
 
 支持两种格式：
 
@@ -410,15 +406,15 @@ WECHAT_CHANNELS_TIMEOUT=30
 
 更新步骤：
 
-1. 浏览器打开 <https://www.douyin.com/> 并登录。
-2. 导出 Douyin cookies.txt，或在开发者工具 Network / 网络里复制 `douyin.com` 请求的 `Cookie` header。
+1. 用浏览器打开某音网站并登录。
+2. 导出某音 cookies.txt，或在开发者工具 Network / 网络里复制平台请求的 `Cookie` header。
 3. 保存到：
 
    ```text
    deploy/cookies/douyin.txt
    ```
 
-4. 重新执行初始化，让脚本同步到可选的 Douyin sidecar 配置：
+4. 重新执行初始化，让脚本同步到可选的某音 sidecar 配置：
 
    ```bash
    scripts/init-local.sh
@@ -439,9 +435,9 @@ scripts/local-up.sh
 - `scripts/package-for-vps.sh` 默认不会打包这个 cookie。
 - 只有使用 `--include-private` 时才会包含真实 cookie，所以这个私有迁移包必须自己保存。
 
-### 视频号 Yuanbao Cookie 获取
+### 视某号 Yuanbao Cookie 获取
 
-部分视频号链接的公开页面 `weixin.qq.com/sph/...` 只返回预览信息，这时项目可以选择使用已登录的腾讯元宝网页 cookie 作为 fallback。
+部分视某号分享内容的公开页面只返回预览信息，这时项目可以选择使用已登录的腾讯元宝网页 Cookie 作为 fallback。
 
 元宝入口：
 
@@ -454,7 +450,7 @@ scripts/local-up.sh
 2. 打开浏览器开发者工具，然后刷新页面。
 3. 在 Network / 网络里找到一个已登录状态下发往 `yuanbao.tencent.com` 的请求。
 4. 复制请求里的 `Cookie` header，或者导出 cookie 文件。
-5. 用管理员账号打开 `/settings` -> Cookies -> `更新视频号元宝 Cookie`，也可以从 Telegram 命令菜单选择 `/set_yuanbao_cookie`。
+5. 用管理员账号打开 `/settings` -> Cookies -> `更新视某号元宝 Cookie`，也可以从 Telegram 命令菜单选择 `/set_yuanbao_cookie`。
 6. Cookie 较短时可以直接跟在命令后面；Cookie 很长或使用文件时，先发送 Cookie 消息或上传文件，再回复该消息发送 `/set_yuanbao_cookie`。
 7. 不记得步骤时，直接发送不带参数的 `/set_yuanbao_cookie`；Bot 会按当前界面语言返回完整获取与更新向导。
 
@@ -549,8 +545,8 @@ git status --ignored -s
 
 - 核心 bot 来自 `upekshaip/tg-ytdlp-bot`。
 - 下载能力来自 `yt-dlp`、`gallery-dl`、`ffmpeg`。
-- 可选抖音 sidecar 来自 `Evil0ctal/Douyin_TikTok_Download_API`。
-- 本项目自研/半原创部分包括：部署封装、私有化安全默认值、抖音移动端解析、视频号/Yuanbao 解析、Telegram 更新 cookie 命令、TikTok Telegram 兼容格式策略、测试、文档和 VPS 运维流程；这些部分是在 Codex 协助下开发整理完成。
+- 可选某音 sidecar 来自 `Evil0ctal/Douyin_TikTok_Download_API`。
+- 本项目自研/半原创部分包括：部署封装、私有化安全默认值、某音移动端解析、视某号/Yuanbao 解析、Telegram 更新 Cookie 命令、TT Telegram 兼容格式策略、测试、文档和 VPS 运维流程；这些部分是在 Codex 协助下开发整理完成。
 
 ## 法律和安全提示
 
