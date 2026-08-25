@@ -130,8 +130,8 @@ vendor/tg-ytdlp-bot
 步骤：
 
 ```bash
-git clone https://github.com/smthdagg/VideoDownload.git
-cd VideoDownload
+git clone https://github.com/smthdagg/ALL-VideoDownload-Plus.git
+cd ALL-VideoDownload-Plus
 cp .env.example .env
 scripts/init-local.sh
 ```
@@ -188,7 +188,7 @@ VPS 需要先安装 Docker 和 Docker Compose。
 ### 方式一：VPS 上直接 clone
 
 ```bash
-git clone https://github.com/smthdagg/VideoDownload.git /opt/video-download-bot
+git clone https://github.com/smthdagg/ALL-VideoDownload-Plus.git /opt/video-download-bot
 cd /opt/video-download-bot
 cp .env.example .env
 cp deploy/config.local.py.example deploy/config.local.py

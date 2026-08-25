@@ -1,5 +1,37 @@
 # ALL VideoDownload Plus
 
+## 中文说明
+
+ALL VideoDownload Plus 是一个面向私人 VPS 部署的 Telegram 多平台下载 Bot。中文优先支持微信视频号、抖音、TikTok、Instagram、X、YouTube，并兼容 Bilibili、小红书及其他 `yt-dlp` / `gallery-dl` 平台。
+
+直接把原始平台链接发送给 Bot，即可解析并下载视频、图片、图集、音频或 X 多视频帖子。Bot 支持中英文 Help 与菜单、`/lang` 语言切换、画质预设、Cookie 管理、用户申请审批、永久拉黑、Web 管理后台、自动清理和 VPS watchdog 自愈。
+
+### 中文快速开始
+
+```bash
+git clone https://github.com/smthdagg/ALL-VideoDownload-Plus.git
+cd ALL-VideoDownload-Plus
+cp .env.example .env
+scripts/init-local.sh
+scripts/local-up.sh
+```
+
+首次运行前填写 `deploy/config.local.py` 中的 Telegram `API_ID`、`API_HASH`、Bot Token、管理员数字 ID 和后台登录凭据。Bot 内常用命令：`/help` 查看完整帮助，`/lang` 切换语言，`/settings` 设置画质/Cookie，`/format` 设置格式，`/clean` 清理个人临时文件。
+
+### 中文 VPS 与迁移
+
+VPS 部署、Docker、SSH 隧道、后台域名、watchdog、磁盘清理、迁移和回滚请阅读：[中文部署与迁移手册](docs/DEPLOYMENT.zh-CN.md)。从正在运行的 VPS 制作最新私有备份：
+
+```bash
+sudo scripts/prepare-vps-migration.sh
+```
+
+私有迁移包包含 Token、Cookie、Telegram Session、用户权限和偏好，只能存放在自己的受保护位置，不能上传 GitHub。
+
+---
+
+## English
+
 ALL VideoDownload Plus is a private-first Telegram downloader focused on WeChat Channels / Weixin Video, Douyin, TikTok, Instagram, X/Twitter, and YouTube, with additional support for Bilibili, Xiaohongshu, and other compatible platforms. Send a platform link to the Bot and receive the downloaded media in Telegram.
 
 This release includes the complete bilingual Bot Help and command menu, private-user approval and blacklist controls, per-user cookies and preferences, X multi-video handling, WeChat Channels Yuanbao fallback, TikTok retry and audio/video compatibility, Douyin resolver integration, an authenticated Web administration panel, automatic cleanup, watchdog recovery, and reproducible VPS migration packages.
@@ -14,7 +46,7 @@ This release includes the complete bilingual Bot Help and command menu, private-
 This repository is a deployment wrapper and patch set around
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, Douyin handling, WeChat Channels handling, TikTok Telegram compatibility, and deployment scripts. This is a semi-original project built through custom development with Codex assistance: the mature downloader engine is upstream, while the deployment layer, privacy hardening, Chinese-platform resolvers, tests, and documentation are custom work in this repo.
 
-中文说明见 [README.zh-CN.md](README.zh-CN.md).
+中文完整版见 [README.zh-CN.md](README.zh-CN.md).
 
 ## Supported Platforms
 
@@ -118,8 +150,8 @@ Requirements:
 Setup:
 
 ```bash
-git clone https://github.com/smthdagg/VideoDownload.git
-cd VideoDownload
+git clone https://github.com/smthdagg/ALL-VideoDownload-Plus.git
+cd ALL-VideoDownload-Plus
 cp .env.example .env
 scripts/init-local.sh
 ```
@@ -170,7 +202,7 @@ On the VPS, install Docker and Docker Compose. Then either clone this repository
 ### Option A: Clone on VPS
 
 ```bash
-git clone https://github.com/smthdagg/VideoDownload.git /opt/video-download-bot
+git clone https://github.com/smthdagg/ALL-VideoDownload-Plus.git /opt/video-download-bot
 cd /opt/video-download-bot
 cp .env.example .env
 cp deploy/config.local.py.example deploy/config.local.py
