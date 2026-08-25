@@ -115,11 +115,12 @@ EOF
 
 rm -f "$OUTPUT" "$OUTPUT.sha256"
 tar -C "$STAGING" -czf "$OUTPUT" video-download-bot
-tar -tzf "$OUTPUT" >/dev/null
+members_file="$STAGING/archive-members.txt"
+tar -tzf "$OUTPUT" >"$members_file"
 
 if [ "$INCLUDE_PRIVATE" != "1" ]; then
   forbidden='(^|/)deploy/config\.local\.py$|(^|/)vendor/tg-ytdlp-bot/\.env$|(^|/)vendor/tg-ytdlp-bot/magic\.session$|(^|/)vendor/tg-ytdlp-bot/CONFIG/private_users\.json$|(^|/)vendor/tg-ytdlp-bot/users(/|$)|(^|/)deploy/cookies/[^/]+\.txt$'
-  if tar -tzf "$OUTPUT" | grep -Eq "$forbidden"; then
+  if grep -Eq "$forbidden" "$members_file"; then
     echo "Public package verification found a private runtime path" >&2
     exit 1
   fi

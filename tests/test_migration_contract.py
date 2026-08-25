@@ -14,6 +14,7 @@ class MigrationContractTest(unittest.TestCase):
         self.assertIn("--include-private", script)
         self.assertIn("vendor/tg-ytdlp-bot/users/*/downloads", script)
         self.assertIn("vendor/tg-ytdlp-bot/docker/configuration-webserver/data", script)
+        self.assertIn('grep -Eq "$forbidden" "$members_file"', script)
         self.assertIn("--exclude 'vendor/tg-ytdlp-bot'", script)
         self.assertIn("--exclude '.env'", script)
         self.assertNotRegex(
@@ -27,6 +28,10 @@ class MigrationContractTest(unittest.TestCase):
         self.assertIn("trap restore_app", script)
         self.assertIn("systemctl stop video-download-watchdog.timer", script)
         self.assertIn("systemctl start video-download-watchdog.timer", script)
+        self.assertIn(
+            'tar -tzf "$archive" "video-download-bot/vendor/tg-ytdlp-bot/CONFIG/config.py"',
+            script,
+        )
         self.assertIn("--include-private", script)
         self.assertIn("chmod 600", script)
 
