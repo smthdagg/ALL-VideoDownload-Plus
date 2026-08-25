@@ -17,6 +17,79 @@ def replace_once(path: Path, old: str, new: str) -> None:
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
+def install_platform_runtime() -> None:
+    source = ROOT / "scripts" / "templates" / "platform_runtime.py"
+    destination = APP / "URL_PARSERS" / "platform_runtime.py"
+    destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def patch_douyin_audio_download() -> None:
+    path = APP / "DOWN_AND_UP" / "down_and_audio.py"
+    replace_once(
+        path,
+        "from URL_PARSERS.tags import extract_url_range_tags\n",
+        "from URL_PARSERS.tags import extract_url_range_tags\n"
+        "from URL_PARSERS.douyin_api import fetch_douyin_video, is_douyin_url\n"
+        "from URL_PARSERS.platform_runtime import resolve_direct_media, should_retry_non_youtube_cookie\n",
+    )
+    replace_once(
+        path,
+        '''    user_id = message.chat.id
+    logger.info(f"down_and_audio called: url={url}, quality_key={quality_key}, video_count={video_count}, video_start_with={video_start_with}")
+''',
+        '''    user_id = message.chat.id
+    logger.info(f"down_and_audio called: url={url}, quality_key={quality_key}, video_count={video_count}, video_start_with={video_start_with}")
+    original_url = url
+    if is_douyin_url(url):
+        douyin_info = resolve_direct_media(url, cached_video_info, fetch_douyin_video)
+        if douyin_info:
+            cached_video_info = douyin_info
+            url = douyin_info["url"]
+            logger.info(f"Using Douyin API direct media URL for audio download: {original_url}")
+''',
+    )
+    replace_once(
+        path,
+        """                    if any(keyword in error_str for keyword in ['cookie', 'auth', 'login', 'sign in', '403', '401', 'forbidden', 'unauthorized']):
+                        logger.info(f"Error appears to be cookie-related for {url}, trying cookie fallback")
+""",
+        """                    if should_retry_non_youtube_cookie(error_str, did_cookie_retry):
+                        logger.info(f"Error appears to be cookie-related for {url}, trying cookie fallback")
+                        did_cookie_retry = True
+""",
+    )
+    replace_once(
+        path,
+        """                        else:
+                            logger.warning(f"Audio download retry with cookie fallback failed for user {user_id}")
+                    else:
+                        logger.info(f"Error appears to be non-cookie-related for {url}, skipping cookie fallback")
+""",
+        """                        else:
+                            logger.warning(f"Audio download retry with cookie fallback failed for user {user_id}")
+                    elif did_cookie_retry:
+                        logger.info(f"Cookie fallback already attempted for {url}; stopping retry recursion")
+                    else:
+                        logger.info(f"Error appears to be non-cookie-related for {url}, skipping cookie fallback")
+""",
+    )
+
+
+def patch_instagram_gallery_fallback() -> None:
+    path = APP / "HELPERS" / "fallback_helper.py"
+    replace_once(
+        path,
+        "    error_lower = error_message.lower()\n",
+        '''    error_lower = error_message.lower()
+
+    if "instagram.com" in url.lower():
+        from URL_PARSERS.platform_runtime import should_use_instagram_gallery_fallback
+        if should_use_instagram_gallery_fallback(error_message):
+            return True
+''',
+    )
+
+
 def patch_limiter() -> None:
     path = APP / "HELPERS" / "limitter.py"
     helper = '''
@@ -492,12 +565,14 @@ def fetch_douyin_video(url: str) -> dict | None:
         "from HELPERS.fallback_helper import should_fallback_to_gallery_dl\n",
         "from HELPERS.fallback_helper import should_fallback_to_gallery_dl\nfrom URL_PARSERS.douyin_api import fetch_douyin_video, is_douyin_url\n",
     )
-    replace_once(
-        down_and_up_path,
-        """    user_id = message.chat.id
+    down_and_up_text = down_and_up_path.read_text(encoding="utf-8")
+    if "Using Douyin API direct media URL" not in down_and_up_text:
+        replace_once(
+            down_and_up_path,
+            """    user_id = message.chat.id
     # Ensure fresh subtitle state at the start of a task even for direct calls (bypassing Always Ask)
 """,
-        """    user_id = message.chat.id
+            """    user_id = message.chat.id
     original_url = url
     if is_douyin_url(url):
         douyin_info = cached_video_info if cached_video_info and cached_video_info.get("url") else fetch_douyin_video(url)
@@ -508,7 +583,7 @@ def fetch_douyin_video(url: str) -> dict | None:
             logger.info(f"Using Douyin API direct media URL for {original_url}")
     # Ensure fresh subtitle state at the start of a task even for direct calls (bypassing Always Ask)
 """,
-    )
+        )
 
     template_path = ROOT / "scripts" / "templates" / "douyin_api.py"
     if template_path.exists():
@@ -558,6 +633,8 @@ def patch_share_text_tag_parser() -> None:
 
 def patch_douyin_always_ask_error() -> None:
     path = APP / "DOWN_AND_UP" / "always_ask_menu.py"
+    if "info.get('error') == 'DOUYIN_RESOLVER_UNAVAILABLE'" in path.read_text(encoding="utf-8"):
+        return
     replace_once(
         path,
         """                send_error_to_user(message, tiktok_message)
@@ -634,6 +711,8 @@ def _is_tiktok_url(url: str) -> bool:
         )
 
     text = path.read_text(encoding="utf-8")
+    if "{'format': TIKTOK_TELEGRAM_SAFE_FORMAT" in text:
+        return
     needle = """        if format_override:
             attempts = [{'format': format_override, 'prefer_ffmpeg': True, 'merge_output_format': user_merge_format}]
         else:
@@ -837,6 +916,7 @@ def patch_x_multi_video_format_probe() -> None:
 
 
 def main() -> None:
+    install_platform_runtime()
     patch_limiter()
     patch_dashboard()
     patch_compose()
@@ -844,6 +924,8 @@ def main() -> None:
     patch_firebase_local_mode()
     patch_douyin_normalization()
     patch_douyin_api_sidecar()
+    patch_douyin_audio_download()
+    patch_instagram_gallery_fallback()
     patch_share_text_tag_parser()
     patch_douyin_always_ask_error()
     patch_yuanbao_cookie_command()

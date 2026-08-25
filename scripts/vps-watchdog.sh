@@ -81,7 +81,8 @@ if grep -Eqi 'Traceback|pyrogram\.errors|ConnectionError|AuthKeyUnregistered|Flo
   exit 0
 fi
 
-if grep -Eq 'Session started|Started [0-9]+ HandlerTasks' <<<"$recent_logs"; then
+if docker logs --since "$started_at" "$container_id" 2>&1 \
+  | awk '/Session started|Started [0-9]+ HandlerTasks/ { found=1 } END { exit !found }'; then
   rm -f "${STATE_DIR}/session_miss_count" 2>/dev/null || true
   log "ok"
   exit 0
