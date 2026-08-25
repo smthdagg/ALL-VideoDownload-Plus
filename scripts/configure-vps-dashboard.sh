@@ -69,6 +69,8 @@ if updated == text:
 path.write_text(updated, encoding="utf-8")
 PY
 
+cp "$PROJECT_DIR/deploy/config.local.py" "$APP_DIR/CONFIG/config.py"
+
 template="$PROJECT_DIR/deploy/Caddyfile.dashboard.example"
 if [ ! -f "$template" ]; then
   echo "Missing $template" >&2
