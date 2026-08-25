@@ -64,6 +64,10 @@ class AdminBotMenuTest(unittest.TestCase):
                 [
                     ("start", "Start the bot"),
                     ("set_yuanbao_cookie", "更新视频号元宝 Cookie"),
+                    ("users", "打开用户管理菜单"),
+                    ("add_user", "添加可使用 Bot 的用户"),
+                    ("remove_user", "移除可使用 Bot 的用户"),
+                    ("list_users", "查看已授权用户"),
                 ],
             )
 
@@ -84,7 +88,10 @@ class AdminBotMenuTest(unittest.TestCase):
             [item.command for item in commands].count("set_yuanbao_cookie"),
             1,
         )
-        self.assertEqual(commands[-1].description, "更新视频号元宝 Cookie")
+        yuanbao = next(
+            item for item in commands if item.command == "set_yuanbao_cookie"
+        )
+        self.assertEqual(yuanbao.description, "更新视频号元宝 Cookie")
 
 
 if __name__ == "__main__":

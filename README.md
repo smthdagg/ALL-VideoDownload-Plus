@@ -325,6 +325,22 @@ ALLOWED_GROUP = []
 
 Only admins and explicitly allowed users can use the bot in private chat. Group access is disabled unless group IDs are added to `ALLOWED_GROUP`.
 
+### Private User Management
+
+Administrators can maintain the runtime allowlist directly in Telegram without restarting the bot:
+
+- `/users` opens the administrator user-management menu.
+- `/add_user 123456789` grants access immediately. An administrator can also reply to a user's original or forwarded message with `/add_user` when Telegram exposes the sender ID.
+- `/remove_user 123456789` removes a dynamically granted user.
+- `/list_users` shows administrators, configuration-file users, and dynamically granted users.
+- `/log 123456789` shows that user's download history to an administrator.
+
+Users listed in `PRIVATE_ALLOWED_USERS` remain configuration-managed and must be removed from `deploy/config.local.py` followed by a restart. Removing a user revokes access but does not erase historical logs or the user's server-side directory.
+
+Private chats, returned media, temporary downloads, uploaded user cookies, format preferences, and `/usage` records are separated by Telegram user ID. Service-level resolver cookies, the Yuanbao cookie, sidecars, and public metadata caches remain shared by the bot instance. Other users cannot browse each other's files or logs; administrators can inspect a specific user's history with `/log`.
+
+The dynamic allowlist is stored in `vendor/tg-ytdlp-bot/CONFIG/private_users.json`. It is excluded from public-safe packages because Telegram user IDs are private deployment data.
+
 ## Validation
 
 Run local tests:

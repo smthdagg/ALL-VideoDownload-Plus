@@ -29,6 +29,15 @@ def install_bot_menu() -> None:
     destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def install_private_users() -> None:
+    templates = {
+        ROOT / "scripts" / "templates" / "private_users.py": APP / "HELPERS" / "private_users.py",
+        ROOT / "scripts" / "templates" / "private_users_cmd.py": APP / "COMMANDS" / "private_users_cmd.py",
+    }
+    for source, destination in templates.items():
+        destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+
 def patch_douyin_audio_download() -> None:
     path = APP / "DOWN_AND_UP" / "down_and_audio.py"
     replace_once(
@@ -98,24 +107,34 @@ def patch_instagram_gallery_fallback() -> None:
 
 def patch_limiter() -> None:
     path = APP / "HELPERS" / "limitter.py"
+    text = path.read_text(encoding="utf-8")
+    private_users_import = (
+        "from HELPERS.private_users import collect_allowed_user_ids, get_private_user_store\n"
+    )
+    if private_users_import not in text:
+        text = text.replace(
+            "from CONFIG.config import Config\n",
+            "from CONFIG.config import Config\n" + private_users_import,
+            1,
+        )
+        path.write_text(text, encoding="utf-8")
+
     helper = '''
 def is_private_mode_enabled():
     return bool(getattr(Config, "PRIVATE_MODE", False))
 
 
 def get_private_allowed_users():
-    allowed = set()
-    for user_id in getattr(Config, "ADMIN", []):
-        try:
-            allowed.add(int(user_id))
-        except Exception:
-            pass
-    for user_id in getattr(Config, "PRIVATE_ALLOWED_USERS", []):
-        try:
-            allowed.add(int(user_id))
-        except Exception:
-            pass
-    return allowed
+    try:
+        dynamic_users = get_private_user_store().list_ids()
+    except Exception as exc:
+        logger.error(f"Could not read dynamic private users: {exc}")
+        dynamic_users = set()
+    return collect_allowed_user_ids(
+        getattr(Config, "ADMIN", []),
+        getattr(Config, "PRIVATE_ALLOWED_USERS", []),
+        dynamic_users,
+    )
 
 
 def is_private_user_allowed(user_id):
@@ -139,11 +158,21 @@ def deny_private_user(message):
     return False
 
 '''
-    replace_once(
-        path,
-        "def create_language_keyboard():\n",
-        helper + "def create_language_keyboard():\n",
-    )
+    text = path.read_text(encoding="utf-8")
+    if "def is_private_mode_enabled():" not in text:
+        replace_once(
+            path,
+            "def create_language_keyboard():\n",
+            helper + "def create_language_keyboard():\n",
+        )
+    elif "dynamic_users = get_private_user_store().list_ids()" not in text:
+        start = text.index("def get_private_allowed_users():")
+        end = text.index("def is_private_user_allowed", start)
+        new_function = helper[
+            helper.index("def get_private_allowed_users():"):
+            helper.index("def is_private_user_allowed")
+        ]
+        path.write_text(text[:start] + new_function + text[end:], encoding="utf-8")
     replace_once(
         path,
         """def is_user_in_channel(app, message):
@@ -790,6 +819,33 @@ def patch_yuanbao_cookie_menus() -> None:
         commands_path.write_text(commands_text.rstrip() + "\n" + menu_line, encoding="utf-8")
 
 
+def patch_private_user_commands() -> None:
+    magic_path = APP / "magic.py"
+    magic_text = magic_path.read_text(encoding="utf-8")
+    import_line = "from COMMANDS.private_users_cmd import *\n"
+    if import_line not in magic_text:
+        marker = "from COMMANDS.admin_cmd import *\n"
+        if marker not in magic_text:
+            raise RuntimeError(f"Expected admin command import not found in {magic_path}")
+        magic_path.write_text(
+            magic_text.replace(marker, marker + import_line, 1),
+            encoding="utf-8",
+        )
+
+    commands_path = APP / "TXT" / "commands.txt"
+    commands_text = commands_path.read_text(encoding="utf-8").rstrip()
+    lines = (
+        "users - Open the private user management menu (admin only)",
+        "add_user - Add a Telegram user ID (admin only)",
+        "remove_user - Remove a Telegram user ID (admin only)",
+        "list_users - List authorized users (admin only)",
+    )
+    for line in lines:
+        if line not in commands_text.splitlines():
+            commands_text += "\n" + line
+    commands_path.write_text(commands_text + "\n", encoding="utf-8")
+
+
 def patch_tiktok_telegram_safe_format() -> None:
     path = APP / "DOWN_AND_UP" / "down_and_up.py"
     text = path.read_text(encoding="utf-8")
@@ -1030,6 +1086,7 @@ def patch_x_multi_video_format_probe() -> None:
 def main() -> None:
     install_platform_runtime()
     install_bot_menu()
+    install_private_users()
     patch_limiter()
     patch_dashboard()
     patch_compose()
@@ -1043,6 +1100,7 @@ def main() -> None:
     patch_douyin_always_ask_error()
     patch_yuanbao_cookie_command()
     patch_yuanbao_cookie_menus()
+    patch_private_user_commands()
     patch_tiktok_telegram_safe_format()
     patch_x_multi_video_posts()
     patch_x_multi_video_format_probe()
