@@ -6,6 +6,7 @@ from pathlib import Path
 
 
 DEFAULT_PRIVATE_USERS_FILE = Path("CONFIG/private_users.json")
+REQUEST_RETRY_SECONDS = 24 * 60 * 60
 
 
 def normalize_user_id(value):
@@ -30,6 +31,14 @@ def collect_allowed_user_ids(admin_ids, static_user_ids, dynamic_user_ids):
     return allowed
 
 
+def build_access_request_markup():
+    from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("申请使用权限", callback_data="private_users|request")]
+    ])
+
+
 class PrivateUserStore:
     def __init__(self, path=DEFAULT_PRIVATE_USERS_FILE):
         self.path = Path(path)
@@ -37,13 +46,17 @@ class PrivateUserStore:
 
     def _read(self):
         if not self.path.exists():
-            return {"users": {}}
+            return {"users": {}, "requests": {}}
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            return {"users": {}}
+            return {"users": {}, "requests": {}}
         users = payload.get("users") if isinstance(payload, dict) else None
-        return {"users": users if isinstance(users, dict) else {}}
+        requests = payload.get("requests") if isinstance(payload, dict) else None
+        return {
+            "users": users if isinstance(users, dict) else {},
+            "requests": requests if isinstance(requests, dict) else {},
+        }
 
     def _write(self, payload):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -80,11 +93,14 @@ class PrivateUserStore:
             payload = self._read()
             key = str(user_id)
             if key in payload["users"]:
+                if payload["requests"].pop(key, None) is not None:
+                    self._write(payload)
                 return False
             payload["users"][key] = {
                 "added_at": int(time.time()),
                 "added_by": added_by,
             }
+            payload["requests"].pop(key, None)
             self._write(payload)
             return True
 
@@ -94,6 +110,88 @@ class PrivateUserStore:
             payload = self._read()
             if payload["users"].pop(str(user_id), None) is None:
                 return False
+            self._write(payload)
+            return True
+
+    def submit_request(self, user_id, profile):
+        user_id = normalize_user_id(user_id)
+        now = int(time.time())
+        with self._lock:
+            payload = self._read()
+            key = str(user_id)
+            if key in payload["users"]:
+                return "allowed"
+
+            existing = payload["requests"].get(key, {})
+            if existing.get("status") == "pending":
+                return "pending"
+            if existing.get("status") == "rejected":
+                try:
+                    reviewed_at = int(existing.get("reviewed_at", 0))
+                except (TypeError, ValueError):
+                    reviewed_at = now
+                if now - reviewed_at < REQUEST_RETRY_SECONDS:
+                    return "rejected"
+
+            clean_profile = {}
+            for field in ("first_name", "last_name", "username"):
+                value = (profile or {}).get(field)
+                if value:
+                    clean_profile[field] = str(value).replace("\n", " ").strip()[:128]
+            payload["requests"][key] = {
+                **clean_profile,
+                "status": "pending",
+                "submitted_at": now,
+            }
+            self._write(payload)
+            return "created"
+
+    def list_pending_requests(self):
+        with self._lock:
+            requests = self._read()["requests"]
+            pending = {}
+            for raw_id, metadata in requests.items():
+                if not isinstance(metadata, dict) or metadata.get("status") != "pending":
+                    continue
+                try:
+                    pending[normalize_user_id(raw_id)] = dict(metadata)
+                except ValueError:
+                    continue
+            return pending
+
+    def approve(self, user_id, reviewed_by):
+        user_id = normalize_user_id(user_id)
+        reviewed_by = normalize_user_id(reviewed_by)
+        with self._lock:
+            payload = self._read()
+            key = str(user_id)
+            request = payload["requests"].get(key)
+            if not isinstance(request, dict) or request.get("status") != "pending":
+                return False
+            payload["users"][key] = {
+                "added_at": int(time.time()),
+                "added_by": reviewed_by,
+                "source": "approved_request",
+            }
+            payload["requests"].pop(key, None)
+            self._write(payload)
+            return True
+
+    def reject(self, user_id, reviewed_by):
+        user_id = normalize_user_id(user_id)
+        reviewed_by = normalize_user_id(reviewed_by)
+        with self._lock:
+            payload = self._read()
+            key = str(user_id)
+            request = payload["requests"].get(key)
+            if not isinstance(request, dict) or request.get("status") != "pending":
+                return False
+            payload["requests"][key] = {
+                **request,
+                "status": "rejected",
+                "reviewed_at": int(time.time()),
+                "reviewed_by": reviewed_by,
+            }
             self._write(payload)
             return True
 
