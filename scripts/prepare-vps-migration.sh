@@ -52,7 +52,8 @@ app_was_running=0
 watchdog_was_active=0
 trap - EXIT INT TERM
 
-if [ -f "$APP_DIR/CONFIG/config.py" ] && ! tar -tzf "$archive" | grep -q 'vendor/tg-ytdlp-bot/CONFIG/config.py$'; then
+if [ -f "$APP_DIR/CONFIG/config.py" ] && \
+  ! tar -tzf "$archive" "video-download-bot/vendor/tg-ytdlp-bot/CONFIG/config.py" >/dev/null; then
   echo "Migration archive is missing the runtime config" >&2
   exit 1
 fi
