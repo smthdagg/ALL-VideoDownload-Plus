@@ -7,7 +7,7 @@ http://bot-admin.example.com {
 }
 
 # Keep the private cookie-file service used by the app container.
-:80 {
+http://configuration-webserver {
     root * /srv
     file_server browse
 }
