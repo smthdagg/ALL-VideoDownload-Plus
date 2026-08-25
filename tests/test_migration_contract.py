@@ -108,6 +108,11 @@ class MigrationContractTest(unittest.TestCase):
             hardening,
         )
 
+    def test_settings_links_distinguish_this_project_from_upstream(self):
+        hardening = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")
+        self.assertIn("https://github.com/smthdagg/VideoDownload", hardening)
+        self.assertIn("https://github.com/upekshaip/tg-ytdlp-bot", hardening)
+
 
 if __name__ == "__main__":
     unittest.main()

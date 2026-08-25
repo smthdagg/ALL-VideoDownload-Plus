@@ -1619,6 +1619,16 @@ def patch_yuanbao_cookie_menus() -> None:
     )
     settings_path.write_text(settings_text, encoding="utf-8")
 
+
+def patch_project_links() -> None:
+    path = APP / "COMMANDS" / "settings_cmd.py"
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        'SETTINGS_DEV_GITHUB_BUTTON_MSG, url="https://github.com/upekshaip/tg-ytdlp-bot"',
+        'SETTINGS_DEV_GITHUB_BUTTON_MSG, url="https://github.com/smthdagg/VideoDownload"',
+    )
+    path.write_text(text, encoding="utf-8")
+
     magic_path = APP / "magic.py"
     magic_text = magic_path.read_text(encoding="utf-8")
     if "from HELPERS.bot_menu import register_admin_bot_commands\n" not in magic_text:
@@ -1933,6 +1943,7 @@ def main() -> None:
     patch_douyin_always_ask_error()
     patch_yuanbao_cookie_command()
     patch_yuanbao_cookie_menus()
+    patch_project_links()
     patch_private_user_commands()
     patch_tiktok_telegram_safe_format()
     patch_x_multi_video_posts()
