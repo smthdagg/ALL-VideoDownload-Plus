@@ -55,6 +55,7 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **X/Twitter multi-video posts**: when a single X/Twitter status contains multiple video entries, the patch probes all entries and downloads them as a multi-item post instead of only taking the first video.
 - **Public-safe packaging**: `scripts/package-for-vps.sh` excludes generated runtime config, cookies, Telegram session files, logs, downloads, and private archives by default; `--include-private` is explicit for personal migration only.
 - **VPS watchdog loop**: `scripts/vps-watchdog.sh` checks Docker, the app container, NTP time sync, and Pyrogram session startup, then restarts only the bot service when it detects time-drift or crash symptoms.
+- **Automatic storage protection**: `scripts/runtime-cleanup.sh` removes stale media and partial files while preserving user settings, cookies, logs, and caches. It runs every 30 minutes on the VPS, and removes the oldest eligible media first when disk usage exceeds 80%.
 - **Patch-driven upstream workflow**: local changes are encoded in `scripts/apply-private-hardening.py` and `scripts/templates/`, so the upstream bot can be re-cloned and patched reproducibly.
 - **Focused tests**: resolver tests cover custom Douyin mobile and WeChat Channels behavior.
 
@@ -223,6 +224,18 @@ configuration before applying the change.
 ### VPS Watchdog Loop
 
 For 24/7 VPS use, install the system-level watchdog loop. It checks Docker, the app container, NTP time sync, and whether the Telegram Pyrogram session actually started. If the bot hits Telegram time-drift errors or a recent Python/Telegram crash, it restarts only the `app` service.
+
+### Runtime storage cleanup
+
+The VPS installer also provides a storage cleanup timer. It runs every 30 minutes, removes media and incomplete download files older than two hours, removes old subtitle metadata, and preserves per-user settings, cookies, logs, and format caches. When disk usage exceeds 80%, it removes the oldest eligible media until usage falls below 70%.
+
+```bash
+bash scripts/install-runtime-cleanup.sh
+systemctl status video-download-runtime-cleanup.timer --no-pager -l
+journalctl -u video-download-runtime-cleanup.service -n 50 --no-pager
+```
+
+The Web dashboard cleanup action uses the actual application directory instead of a hard-coded legacy path. Docker container logs are capped at 100 MB per file and three rotated files per service.
 
 ```bash
 sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watchdog

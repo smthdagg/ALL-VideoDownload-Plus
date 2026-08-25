@@ -810,6 +810,48 @@ async def api_private_user_action(action: str, payload: PrivateUserActionRequest
     )
 
 
+def patch_storage_cleanup() -> None:
+    path = APP / "services" / "system_service.py"
+    text = path.read_text(encoding="utf-8")
+    start = text.index("def cleanup_user_files() -> Dict[str, Any]:")
+    end = text.index("\ndef update_lists()", start)
+    replacement = '''def cleanup_user_files() -> Dict[str, Any]:
+    """Delete generated media while preserving per-user settings and credentials."""
+    try:
+        users_dir = Path(__file__).resolve().parents[1] / "users"
+        if not users_dir.is_dir():
+            return {"status": "ok", "message": "User files cleaned up successfully", "removed": 0}
+
+        protected = {
+            "lang.txt", "args.txt", "keyboard.txt", "subs.txt", "subs_auto.txt",
+            "mediainfo.txt", "split.txt", "tags.txt", "cookie.txt", "logs.txt",
+            "format.txt", "nsfw.txt", "proxy.txt", "flood_wait.txt",
+        }
+        extensions = {
+            ".part", ".ytdl", ".temp", ".tmp", ".mp3", ".mp4", ".mkv", ".avi",
+            ".mov", ".wmv", ".flv", ".webm", ".m4a", ".aac", ".ogg", ".wav",
+            ".jpg", ".jpeg", ".png",
+        }
+        removed = 0
+        for file_path in users_dir.rglob("*"):
+            if not file_path.is_file() or file_path.name in protected:
+                continue
+            if file_path.suffix.lower() not in extensions:
+                continue
+            try:
+                file_path.unlink()
+                removed += 1
+            except FileNotFoundError:
+                continue
+            except OSError as exc:
+                logger.warning("Could not remove runtime file %s: %s", file_path, exc)
+        return {"status": "ok", "message": "User files cleaned up successfully", "removed": removed}
+    except Exception as exc:
+        logger.exception("Failed to clean user files")
+        return {"status": "error", "message": str(exc)}
+
+'''
+    path.write_text(text[:start] + replacement + text[end + 1 :], encoding="utf-8")
 def patch_compose() -> None:
     path = APP / "docker-compose.yml"
     replace_once(
@@ -1694,6 +1736,7 @@ def main() -> None:
     patch_limiter()
     patch_bot_i18n()
     patch_dashboard()
+    patch_storage_cleanup()
     patch_compose()
     patch_dockerfile()
     patch_firebase_local_mode()

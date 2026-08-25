@@ -60,6 +60,7 @@ English documentation: [README.md](README.md).
 - **X/Twitter 多视频帖子**：一个 X/Twitter 帖子里如果有多个视频，补丁会探测全部 media entries，并按多视频任务下载，不再只取第一个。
 - **公开安全打包**：`scripts/package-for-vps.sh` 默认排除真实配置、cookies、Telegram session、日志、下载文件和私有压缩包；只有显式 `--include-private` 才会生成个人迁移包。
 - **VPS 自检循环**：`scripts/vps-watchdog.sh` 从系统层检查 Docker、app 容器、NTP 时间同步和 Pyrogram session；发现时间漂移或崩溃迹象时只重启 bot 服务。
+- **自动磁盘保护**：`scripts/runtime-cleanup.sh` 会清理过期媒体和下载残片，同时保留用户设置、Cookie、日志和缓存。VPS 上每 30 分钟运行一次，当磁盘使用率超过 80% 时会优先删除最旧的可清理媒体文件。
 - **补丁化维护上游**：自定义修改集中在 `scripts/apply-private-hardening.py` 和 `scripts/templates/`，以后重新 clone 上游 bot 后可以重复打补丁。
 - **聚焦测试**：为自定义的抖音移动端解析、视频号解析保留了单元测试。
 
@@ -242,6 +243,18 @@ scripts/configure-vps-dashboard.sh
 ### VPS 自检循环
 
 VPS 24 小时运行时，建议安装系统级 watchdog。它每分钟从外部检查 Docker、app 容器、系统时间同步，以及 Telegram Pyrogram session 是否真的启动。遇到 Telegram 时间漂移、近期 Python/Telegram 崩溃、容器停止等情况时，只重启 `app` 服务，不会重启整台 VPS。
+
+### 自动清理与磁盘保护
+
+VPS 安装脚本还提供了磁盘清理定时器，每 30 分钟运行一次。它会删除超过两小时的媒体文件和下载残片，清理旧字幕元数据，同时保留每个用户的设置、Cookie、日志和格式缓存。当磁盘使用率超过 80% 时，会按文件时间从旧到新删除可清理媒体，直到使用率降到 70% 以下。
+
+```bash
+bash scripts/install-runtime-cleanup.sh
+systemctl status video-download-runtime-cleanup.timer --no-pager -l
+journalctl -u video-download-runtime-cleanup.service -n 50 --no-pager
+```
+
+Web 后台的“清理用户文件”现在会根据实际应用目录工作，不再使用旧的硬编码路径。Docker 各服务日志限制为每个文件 100 MB，最多保留 3 个轮转文件。
 
 ```bash
 sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watchdog
