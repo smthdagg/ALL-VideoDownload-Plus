@@ -312,17 +312,19 @@ scripts/local-up.sh
 
 元宝入口：
 
-- 官方首页：<https://yuanbao.tencent.com/>
-- 网页聊天：<https://yuanbao.tencent.com/chat/>
+- 当前网页应用及登录入口：<https://yuanbao.tencent.com/>
+- 原来的 `/chat/` 地址现在会跳转到网页应用首页。
 
 推荐步骤：
 
-1. 用浏览器打开元宝网页聊天并登录。
-2. 打开浏览器开发者工具，刷新或发送一次消息。
-3. 在 Network / 网络里找到 `yuanbao.tencent.com` 请求。
+1. 用浏览器打开 <https://yuanbao.tencent.com/> 并登录。
+2. 打开浏览器开发者工具，然后刷新页面。
+3. 在 Network / 网络里找到一个已登录状态下发往 `yuanbao.tencent.com` 的请求。
 4. 复制请求里的 `Cookie` header，或者导出 cookie 文件。
 5. 在 Telegram 里用管理员账号发送 `/set_yuanbao_cookie`。
 6. 把 Cookie header 或 cookie 文件回复给 bot。
+
+如果元宝请求返回 HTTP `401`，表示保存的 cookie 已经过期或被拒绝，需要重新登录并按上述步骤更新。元宝可能调整内部接口地址，因此应从当前网页应用获取 cookie，不要依赖旧教程中的固定接口。
 
 手动更新方式：
 

@@ -285,16 +285,18 @@ Some WeChat Channels links only expose preview metadata from the public `weixin.
 
 Yuanbao entry:
 
-- Official site: <https://yuanbao.tencent.com/>
-- Chat page: <https://yuanbao.tencent.com/chat/>
+- Current web app and login page: <https://yuanbao.tencent.com/>
+- The former `/chat/` URL now redirects to the web app root.
 
 Recommended workflow:
 
-1. Open the Yuanbao chat page in your browser and log in.
-2. Open browser developer tools, then find a request to `yuanbao.tencent.com`.
+1. Open <https://yuanbao.tencent.com/> in your browser and log in.
+2. Open browser developer tools, refresh the page, then find an authenticated request to `yuanbao.tencent.com`.
 3. Copy the request `Cookie` header, or export it as a cookie file.
 4. Send `/set_yuanbao_cookie` to the bot as an admin.
 5. Reply with the Cookie header or cookie file.
+
+If the Yuanbao request returns HTTP `401`, the saved cookie has expired or been rejected. Log in again and repeat the steps above. Yuanbao occasionally changes its internal API paths, so capture a cookie from the current web app instead of relying on an old endpoint-specific tutorial.
 
 Manual VPS update:
 
