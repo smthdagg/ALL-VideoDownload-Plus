@@ -57,6 +57,35 @@ COMMON_COMMAND_DESCRIPTIONS_ZH = {
     "list": "查看支持的内容",
 }
 
+COMMON_COMMAND_DESCRIPTIONS_EN = {
+    "start": "Start the bot",
+    "lang": "Change language",
+    "help": "Show help instructions",
+    "keyboard": "Show the shortcut keyboard",
+    "settings": "Open download settings",
+    "clean": "Clean temporary files",
+    "vid": "Download video",
+    "img": "Download image",
+    "audio": "Download audio",
+    "search": "Search media",
+    "cookie": "Manage website cookies",
+    "cookies_from_browser": "Import browser cookies",
+    "playlist": "Download playlists",
+    "format": "Choose quality and format",
+    "list": "List available formats",
+    "mediainfo": "Toggle media information",
+    "split": "Set file split size",
+    "subs": "Set subtitle options",
+    "link": "Get direct media links",
+    "proxy": "Set download proxy",
+    "check_cookie": "Check cookie status",
+    "save_as_cookie": "Save text as cookies",
+    "tags": "Manage media tags",
+    "usage": "View usage statistics",
+    "nsfw": "Set sensitive-content options",
+    "args": "Set advanced download options",
+}
+
 
 YUANBAO_COOKIE_HELP = text("yuanbao_guide", language="zh")
 
@@ -77,6 +106,13 @@ def _localized_base_commands(default_commands, language, bot_command_type):
     ]
 
 
+def _fallback_commands(bot_command_type):
+    return [
+        bot_command_type(command, description)
+        for command, description in COMMON_COMMAND_DESCRIPTIONS_EN.items()
+    ]
+
+
 def register_admin_bot_commands(app, admin_ids):
     """Register localized global menus and add maintenance commands for admins."""
     from pyrogram.types import BotCommand, BotCommandScopeChat
@@ -86,11 +122,18 @@ def register_admin_bot_commands(app, admin_ids):
     except Exception as exc:
         logger.warning("Could not read the default Telegram command menu: %s", exc)
         default_commands = []
+    if not default_commands:
+        default_commands = _fallback_commands(BotCommand)
 
     admin_command_names = {name for name, _ in ADMIN_COMMANDS}
     base_commands = [
         command for command in default_commands if command.command not in admin_command_names
     ]
+
+    try:
+        app.set_bot_commands(_localized_base_commands(base_commands, "en", BotCommand))
+    except Exception as exc:
+        logger.warning("Could not register the default Telegram menu: %s", exc)
 
     for language, telegram_codes in TELEGRAM_MENU_LANGUAGE_CODES.items():
         for telegram_code in telegram_codes:
@@ -111,6 +154,12 @@ def register_admin_bot_commands(app, admin_ids):
         try:
             chat_id = int(admin_id)
             scope = BotCommandScopeChat(chat_id)
+            try:
+                admin_commands = _localized_base_commands(base_commands, "en", BotCommand)
+                admin_commands.extend(BotCommand(name, description) for name, description in ADMIN_COMMANDS_BY_LANGUAGE["en"])
+                app.set_bot_commands(admin_commands, scope=scope)
+            except Exception as exc:
+                logger.warning("Could not register the default admin menu for %s: %s", admin_id, exc)
             for language, telegram_codes in TELEGRAM_MENU_LANGUAGE_CODES.items():
                 for telegram_code in telegram_codes:
                     localized_commands = ADMIN_COMMANDS_BY_LANGUAGE[language]

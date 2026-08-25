@@ -64,9 +64,9 @@ class AdminBotMenuTest(unittest.TestCase):
 
         module.register_admin_bot_commands(app, [123, "456"])
 
-        self.assertEqual(len(app.set_calls), 6)
+        self.assertEqual(len(app.set_calls), 9)
         global_calls = [call for call in app.set_calls if call[1] is None]
-        self.assertEqual(len(global_calls), 2)
+        self.assertEqual(len(global_calls), 3)
         zh_commands = next(call[0] for call in global_calls if call[2] == "zh")
         self.assertEqual(zh_commands[0].description, "开始使用 Bot")
 
@@ -74,8 +74,10 @@ class AdminBotMenuTest(unittest.TestCase):
         for commands, scope, language_code in admin_calls:
             self.assertEqual(scope.chat_id in (123, 456), True)
             descriptions = dict((item.command, item.description) for item in commands)
-            self.assertEqual(language_code in ("en", "zh"), True)
+            self.assertEqual(language_code in (None, "en", "zh"), True)
             expected = "Open user management" if language_code == "en" else "打开用户管理菜单"
+            if language_code is None:
+                expected = "Open user management"
             self.assertEqual(descriptions["users"], expected)
 
     def test_replaces_an_existing_yuanbao_command_without_duplicates(self):
@@ -101,7 +103,19 @@ class AdminBotMenuTest(unittest.TestCase):
             item for item in commands if item.command == "set_yuanbao_cookie"
         )
         expected = "Update WeChat Channels Cookie" if language_code == "en" else "更新视频号元宝 Cookie"
+        if language_code is None:
+            expected = "Update WeChat Channels Cookie"
         self.assertEqual(yuanbao.description, expected)
+
+    def test_builds_a_menu_when_telegram_has_no_existing_commands(self):
+        module = load_module()
+        app = FakeApp([])
+
+        module.register_admin_bot_commands(app, [])
+
+        default_commands = app.set_calls[0][0]
+        self.assertIn("help", [item.command for item in default_commands])
+        self.assertIn("lang", [item.command for item in default_commands])
 
 
 if __name__ == "__main__":
