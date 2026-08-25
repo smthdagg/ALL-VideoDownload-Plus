@@ -1,10 +1,30 @@
 # ALL VideoDownload Plus
 
+[![GitHub release](https://img.shields.io/github/v/release/smthdagg/ALL-VideoDownload-Plus?display_name=tag)](https://github.com/smthdagg/ALL-VideoDownload-Plus/releases)
+[![License](https://img.shields.io/github/license/smthdagg/ALL-VideoDownload-Plus)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](docs/DEPLOYMENT.md)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](docs/DEPLOYMENT.md)
+
+![User access flow](docs/images/user-access-flow.svg)
+
+> 中文首页先介绍核心使用流程；英文说明、部署手册、架构图和安全边界见下文及 `docs/`。
+
 ## 中文说明
 
 ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它面向私人 VPS 部署，中文优先支持微信视频号、抖音、TikTok、Instagram、X、YouTube，并兼容 Bilibili、小红书及其他 `yt-dlp` / `gallery-dl` 平台。上游项目只作为下载引擎，本项目独立维护权限、解析增强、Cookie 工具、部署、安全和文档。
 
 直接把原始平台链接发送给 Bot，即可解析并下载视频、图片、图集、音频或 X 多视频帖子。Bot 支持中英文 Help 与菜单、`/lang` 语言切换、画质预设、Cookie 管理、用户申请审批、永久拉黑、Web 管理后台、自动清理和 VPS watchdog 自愈。
+
+![System architecture](docs/images/system-architecture.svg)
+
+![Storage policy](docs/images/storage-policy.svg)
+
+### Bot UI preview
+
+The bilingual Help screen keeps the common workflow, Cookie import, playlist,
+quality, cleanup, and language commands in one readable panel.
+
+![Chinese Bot Help preview](docs/images/bot-help-zh.png)
 
 ### 中文快速开始
 

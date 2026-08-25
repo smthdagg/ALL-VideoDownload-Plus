@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">ALL VideoDownload Plus system architecture</title>
+  <desc id="desc">Telegram users connect to the bot, which routes requests to platform resolvers and media processing services.</desc>
+  <rect width="1200" height="520" fill="#0f1720"/>
+  <text x="60" y="58" fill="#f4f7fb" font-family="Arial, sans-serif" font-size="28" font-weight="700">System architecture</text>
+  <text x="60" y="88" fill="#9fb2c7" font-family="Arial, sans-serif" font-size="16">A private-first Telegram layer around yt-dlp, gallery-dl, and custom resolvers.</text>
+  <g font-family="Arial, sans-serif" font-size="16" text-anchor="middle">
+    <g fill="#1d3347" stroke="#4ea1d8" stroke-width="2">
+      <rect x="70" y="190" width="180" height="90" rx="10"/>
+      <rect x="330" y="165" width="220" height="140" rx="10"/>
+      <rect x="665" y="115" width="205" height="80" rx="10"/><rect x="665" y="220" width="205" height="80" rx="10"/><rect x="665" y="325" width="205" height="80" rx="10"/>
+      <rect x="960" y="165" width="170" height="140" rx="10"/>
+    </g>
+    <g fill="#f4f7fb">
+      <text x="160" y="225"><tspan x="160" dy="0">Telegram</tspan><tspan x="160" dy="24">users and admins</tspan></text>
+      <text x="440" y="220"><tspan x="440" dy="0">ALL VideoDownload</tspan><tspan x="440" dy="24">Plus Bot</tspan><tspan x="440" dy="24">access + preferences</tspan></text>
+      <text x="767" y="155"><tspan x="767" dy="0">Platform resolvers</tspan><tspan x="767" dy="24">Douyin / WeChat / TikTok</tspan></text>
+      <text x="767" y="260"><tspan x="767" dy="0">Media engines</tspan><tspan x="767" dy="24">yt-dlp / gallery-dl</tspan></text>
+      <text x="767" y="365"><tspan x="767" dy="0">Processing</tspan><tspan x="767" dy="24">FFmpeg + Telegram-safe</tspan></text>
+      <text x="1045" y="225"><tspan x="1045" dy="0">Private media</tspan><tspan x="1045" dy="24">per-user files</tspan><tspan x="1045" dy="24">and cleanup</tspan></text>
+    </g>
+  </g>
+  <g stroke="#7bd1a1" stroke-width="3" fill="none">
+    <path d="M250 235h80m220 0h105M550 215l105-60M550 245l105 95M870 260h90"/>
+    <path d="m318 225 12 10-12 10m337-90 12 10-12 10m0 80 12 10-12 10m0 80 12 10-12 10m213-100 12 10-12 10"/>
+  </g>
+  <text x="600" y="465" fill="#9fb2c7" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">Dashboard and VPS operations stay separate from the Telegram download path.</text>
+</svg>

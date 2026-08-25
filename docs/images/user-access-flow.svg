@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">ALL VideoDownload Plus user access flow</title>
+  <desc id="desc">A private user applies, an administrator approves, and the user downloads media with isolated data.</desc>
+  <rect width="1200" height="360" fill="#0f1720"/>
+  <text x="60" y="58" fill="#f4f7fb" font-family="Arial, sans-serif" font-size="28" font-weight="700">Private user access flow</text>
+  <text x="60" y="88" fill="#9fb2c7" font-family="Arial, sans-serif" font-size="16">Approval, Cookie import, and per-user storage are explicit.</text>
+  <g font-family="Arial, sans-serif" font-size="17" text-anchor="middle">
+    <g fill="#1d3347" stroke="#4ea1d8" stroke-width="2">
+      <rect x="55" y="145" width="180" height="90" rx="10"/><rect x="285" y="145" width="180" height="90" rx="10"/>
+      <rect x="515" y="145" width="180" height="90" rx="10"/><rect x="745" y="145" width="180" height="90" rx="10"/>
+      <rect x="975" y="145" width="170" height="90" rx="10"/>
+    </g>
+    <g fill="#f4f7fb">
+      <text x="145" y="182"><tspan x="145" dy="0">New user</tspan><tspan x="145" dy="25">/start</tspan></text>
+      <text x="375" y="182"><tspan x="375" dy="0">Apply for access</tspan><tspan x="375" dy="25">one request</tspan></text>
+      <text x="605" y="182"><tspan x="605" dy="0">Admin review</tspan><tspan x="605" dy="25">approve or block</tspan></text>
+      <text x="835" y="182"><tspan x="835" dy="0">Import own Cookie</tspan><tspan x="835" dy="25">/settings</tspan></text>
+      <text x="1060" y="182"><tspan x="1060" dy="0">Send URL</tspan><tspan x="1060" dy="25">download media</tspan></text>
+    </g>
+  </g>
+  <g stroke="#7bd1a1" stroke-width="3" fill="none">
+    <path d="M235 190h45m185 0h45m185 0h45m185 0h45"/>
+    <path d="m270 180 12 10-12 10m230-10 12 10-12 10m230-10 12 10-12 10m230-10 12 10-12 10"/>
+  </g>
+  <text x="600" y="305" fill="#9fb2c7" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">Telegram numeric ID isolates files, preferences, Cookies, and usage records.</text>
+</svg>
