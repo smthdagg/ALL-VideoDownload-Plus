@@ -78,7 +78,7 @@ sed "s/bot-admin\.example\.com/$DASHBOARD_DOMAIN/g; s/:8443/:$DASHBOARD_HTTPS_PO
 
 cd "$APP_DIR"
 docker compose config >/dev/null
-docker compose up -d --no-deps configuration-webserver
+docker compose up -d --no-deps --force-recreate configuration-webserver
 sleep 8
 docker compose ps configuration-webserver app
 curl -fsS http://127.0.0.1:5555/health
