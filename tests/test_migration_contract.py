@@ -113,6 +113,16 @@ class MigrationContractTest(unittest.TestCase):
         self.assertIn("https://github.com/smthdagg/VideoDownload", hardening)
         self.assertIn("https://github.com/upekshaip/tg-ytdlp-bot", hardening)
 
+    def test_project_brand_and_bilingual_help_are_tracked(self):
+        english_help = (ROOT / "scripts/templates/messages_EN_overrides.py").read_text(encoding="utf-8")
+        chinese_help = (ROOT / "scripts/templates/messages_ZH.py").read_text(encoding="utf-8")
+        for text in (english_help, chinese_help):
+            self.assertIn("ALL VideoDownload Plus", text)
+            self.assertIn("TikTok", text)
+            self.assertIn("Douyin", text)
+            self.assertIn("WeChat", text)
+            self.assertIn("/lang", text)
+
 
 if __name__ == "__main__":
     unittest.main()

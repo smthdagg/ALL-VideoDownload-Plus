@@ -10,7 +10,7 @@ app_was_running=0
 watchdog_was_active=0
 
 if [ ! -x "$PROJECT_DIR/scripts/package-for-vps.sh" ] || [ ! -f "$APP_DIR/docker-compose.yml" ]; then
-  echo "Video Download Bot System is not initialized under $PROJECT_DIR" >&2
+  echo "ALL VideoDownload Plus is not initialized under $PROJECT_DIR" >&2
   exit 1
 fi
 

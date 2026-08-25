@@ -1,4 +1,4 @@
-# Video Download Bot System 部署与迁移
+# ALL VideoDownload Plus 部署与迁移
 
 这是本项目本地安装、VPS 部署、备份、迁移、验收和回滚的中文标准手册。
 生产域名、IP、SSH 端口、密码和 Cookie 不保存在 GitHub。

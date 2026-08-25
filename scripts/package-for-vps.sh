@@ -105,7 +105,7 @@ if git -C "$ROOT_DIR/vendor/tg-ytdlp-bot" rev-parse HEAD >/dev/null 2>&1; then
 fi
 
 cat >"$PACKAGE_DIR/MIGRATION-MANIFEST.txt" <<EOF
-Video Download Bot System migration package
+ALL VideoDownload Plus migration package
 Created UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 Mode: $([ "$INCLUDE_PRIVATE" = "1" ] && echo private || echo public-safe)
 Project commit: $root_commit

@@ -29,7 +29,8 @@ class BilingualUiContractTest(unittest.TestCase):
 
         self.assertIn('"language_changed": "界面语言已切换为中文。"', private_i18n)
         self.assertIn("https://yuanbao.tencent.com/", private_i18n)
-        self.assertIn("视频下载 Bot 使用向导", chinese_messages)
+        self.assertIn("ALL VideoDownload Plus 使用向导", chinese_messages)
+        self.assertIn("ALL VideoDownload Plus", (TEMPLATES / "messages_EN_overrides.py").read_text(encoding="utf-8"))
         self.assertIn("COMMON_COMMAND_DESCRIPTIONS_ZH", bot_menu)
 
 

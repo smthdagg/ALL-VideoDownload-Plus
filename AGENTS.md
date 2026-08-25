@@ -1,10 +1,10 @@
-# Video Download Bot System: Agent Handoff
+# ALL VideoDownload Plus: Agent Handoff
 
 Read this file before changing, testing, packaging, or deploying the project.
 
 ## Project Purpose
 
-This repository is a reproducible wrapper and patch layer around
+This repository is the reproducible wrapper and patch layer for ALL VideoDownload Plus, built around
 `upekshaip/tg-ytdlp-bot`. It adds private access control, Chinese/English UI,
 Douyin and WeChat Channels resolvers, TikTok reliability and Telegram-safe
 formats, X multi-video handling, an authenticated admin dashboard, operational
@@ -22,6 +22,7 @@ timers, and migration tooling.
 
 ## Current Runtime Baseline
 
+- Public project name: `ALL VideoDownload Plus`.
 - Python 3.12 Docker base.
 - Stable `yt-dlp 2026.08.19` with `curl-cffi`.
 - `bgutil-ytdlp-pot-provider 1.3.2` service and plugin.

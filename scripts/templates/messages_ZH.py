@@ -5,7 +5,7 @@ class Messages(EnglishMessages):
     CREDITS_MSG = "<b>界面语言：/lang</b>"
     TO_USE_MSG = "此 Bot 为私人服务；未授权用户请先提交使用申请。"
     ERROR1 = "未找到网址。请发送以 <b>https://</b> 或 <b>http://</b> 开头的链接。"
-    WELCOME_MASTER = "管理员您好。发送链接即可下载，使用 /settings 打开设置，使用 /users 管理用户。"
+    WELCOME_MASTER = "ALL VideoDownload Plus 管理员您好。发送链接即可下载，使用 /settings 打开设置，使用 /users 管理用户。"
     URL_EXTRACTOR_WELCOME_MSG = (
         "你好，{first_name}。\n\n"
         "直接发送视频或图片链接即可下载。支持 TikTok、Douyin/抖音、WeChat Channels/视频号、"
@@ -13,7 +13,7 @@ class Messages(EnglishMessages):
         "使用 /settings 设置画质、Cookie 与语言；使用 /help 查看完整向导。\n\n{credits}"
     )
     HELP_MSG = """
-<b>视频下载 Bot 使用向导</b>
+<b>ALL VideoDownload Plus 使用向导</b>
 
 <b>基本使用</b>
 • 直接发送视频、图片或帖子链接，Bot 会自动解析并下载。

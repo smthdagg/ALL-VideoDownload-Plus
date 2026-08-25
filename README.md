@@ -1,6 +1,15 @@
-# Video Download Bot System
+# ALL VideoDownload Plus
 
-Video Download Bot System is a private-first Telegram downloader focused on WeChat Channels / Weixin Video, Douyin, TikTok, Instagram, X/Twitter, and YouTube, with additional support for Bilibili, Xiaohongshu, and other compatible platforms. Send a platform link to the Bot and receive the downloaded media in Telegram.
+ALL VideoDownload Plus is a private-first Telegram downloader focused on WeChat Channels / Weixin Video, Douyin, TikTok, Instagram, X/Twitter, and YouTube, with additional support for Bilibili, Xiaohongshu, and other compatible platforms. Send a platform link to the Bot and receive the downloaded media in Telegram.
+
+This release includes the complete bilingual Bot Help and command menu, private-user approval and blacklist controls, per-user cookies and preferences, X multi-video handling, WeChat Channels Yuanbao fallback, TikTok retry and audio/video compatibility, Douyin resolver integration, an authenticated Web administration panel, automatic cleanup, watchdog recovery, and reproducible VPS migration packages.
+
+## Release Scope
+
+- **Bot experience:** English and Chinese Help, localized Telegram command menus, `/lang`, `/settings`, quality presets, cookie tools, and platform-specific guides.
+- **Platform work:** TikTok challenge retries with bounded backoff, Telegram-safe audio/video formats, X multi-video posts, Douyin mobile/API fallbacks, WeChat Channels public and Yuanbao resolvers, and Instagram gallery handling.
+- **Private operations:** approval workflow, rate-limited access requests, permanent blacklist, per-user isolation, authenticated dashboard, log visibility, disk cleanup, watchdog recovery, and migration-safe backups.
+- **Maintenance model:** custom behavior is stored in tracked patch scripts and templates; generated upstream code stays reproducible and private runtime state never enters GitHub.
 
 This repository is a deployment wrapper and patch set around
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, Douyin handling, WeChat Channels handling, TikTok Telegram compatibility, and deployment scripts. This is a semi-original project built through custom development with Codex assistance: the mature downloader engine is upstream, while the deployment layer, privacy hardening, Chinese-platform resolvers, tests, and documentation are custom work in this repo.
@@ -260,7 +269,7 @@ sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watch
 
 sudo tee /etc/systemd/system/video-download-watchdog.service >/dev/null <<'EOF'
 [Unit]
-Description=Video Download Bot System watchdog
+Description=ALL VideoDownload Plus watchdog
 Wants=docker.service
 After=docker.service network-online.target
 
@@ -274,7 +283,7 @@ EOF
 
 sudo tee /etc/systemd/system/video-download-watchdog.timer >/dev/null <<'EOF'
 [Unit]
-Description=Run Video Download Bot System watchdog every minute
+Description=Run ALL VideoDownload Plus watchdog every minute
 
 [Timer]
 OnBootSec=2min
