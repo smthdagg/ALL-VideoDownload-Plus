@@ -1,6 +1,6 @@
 # ALL VideoDownload Plus
 
-ALL VideoDownload Plus 是一个适合个人自部署的 Telegram 下载 Bot，重点支持微信视频号、抖音、TikTok、Instagram、X、YouTube，同时兼容 Bilibili、小红书以及其他支持良好的平台。用户只需要把平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
+ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它重点支持微信视频号、抖音、TikTok、Instagram、X、YouTube，同时兼容 Bilibili、小红书以及其他由 `yt-dlp` / `gallery-dl` 支持的平台。用户只需要把原始平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
 
 当前版本包含完整中英文 Bot Help 与命令菜单、用户申请/审批/永久拉黑、独立 Cookie 与用户偏好、X 多视频帖子、视频号元宝解析、TikTok 音视频兼容与重试、抖音解析、带认证的 Web 管理后台、自动清理、watchdog 自愈以及可复现的 VPS 迁移备份。
 
@@ -11,23 +11,40 @@ ALL VideoDownload Plus 是一个适合个人自部署的 Telegram 下载 Bot，�
 - **私人部署能力：**用户申请、频率限制、审批、永久拉黑、用户隔离、认证后台、日志查看、磁盘清理、watchdog 自愈和迁移备份。
 - **维护方式：**自研行为统一保存在受 Git 跟踪的补丁脚本和模板中，上游生成代码可重复生成，运行时私密数据不会进入 GitHub。
 
-本项目不是从零重写下载器，而是基于
+本项目不是从零重写下载器，而是以
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot)
-做部署封装和功能增强。上游 bot 负责 Telegram、`yt-dlp`、`gallery-dl`、上传、格式选择等核心能力；本项目负责私有化部署、抖音/视频号增强、TikTok Telegram 兼容、VPS 脚本、安全默认值、测试和文档。这个项目属于“半原创”：成熟下载底座借鉴/复用上游开源项目，中文平台适配、部署流程和安全加固是在 Codex 协助下定制开发完成。
+作为下载引擎依赖，再独立维护产品配置、补丁层、中文平台适配、权限管理、Cookie 工具、部署脚本、测试和文档。上游 bot 负责 Telegram、`yt-dlp`、`gallery-dl`、上传、格式选择等底层能力；本项目负责私有化部署、抖音/视频号增强、TikTok Telegram 兼容、VPS 运维和安全默认值。这个项目属于“半原创”：成熟下载底座借鉴/复用上游开源项目，定制功能是在 Codex 协助下开发完成。
 
 English documentation: [README.md](README.md).
 
-## 重点支持平台
+## 支持的平台与链接类型
 
-| 平台 | 常见链接 | 说明 |
-| --- | --- | --- |
-| 微信视频号 / WeChat Channels | `weixin.qq.com/sph/...` | 优先解析公开链接；部分链接需要元宝 Cookie fallback。 |
-| 抖音 / Douyin | `v.douyin.com/...`、`douyin.com/...` | 支持分享文案、短链归一化，可选 Cookie 和解析 API。 |
-| TikTok | `tiktok.com/...` | 尽量选择 Telegram 兼容的 H.264 + AAC MP4。 |
-| Instagram | 帖子、Reels、图片 | 私密或受限制内容通常需要有效 Cookie。 |
-| X / Twitter | `x.com/...`、`twitter.com/...` | 支持一个帖子中的多个视频。 |
-| YouTube | `youtube.com/...`、`youtu.be/...` | 使用 PO Token provider，也支持可选 Cookie。 |
-| 其他兼容站点 | Bilibili、小红书及大量 `yt-dlp` / `gallery-dl` 站点 | 实际可用性取决于平台变化和上游解析器。 |
+下面的“重点适配”表示本项目对该平台增加了专门代码或运行配置；“通用兼容”表示主要依赖上游 `yt-dlp` / `gallery-dl` 的解析器。平台改版、地区限制、登录验证、限流和 Cookie 过期都可能影响实际结果。
+
+| 平台 | 常见链接或内容 | 当前能力 | 登录态 / 注意事项 |
+| --- | --- | --- | --- |
+| 微信视频号 / WeChat Channels | `weixin.qq.com/sph/...` | **重点适配**；公开链接解析、预览卡片识别、Yuanbao fallback。 | 公开接口只返回预览信息时，需要有效的 Tencent Yuanbao Cookie；Cookie 由管理员更新。 |
+| 抖音 / Douyin | `v.douyin.com/...`、`douyin.com/...`、分享文案 | **重点适配**；分享文本提取、短链归一化、移动端页面解析、可选 API sidecar。 | 通常可不带 Cookie；风控或地区变化时可配置 Douyin Cookie / sidecar。 |
+| TikTok | `www.tiktok.com/@user/video/...`、`vt.tiktok.com/...` | **重点适配**；视频下载、有限挑战重试、Telegram 兼容音视频格式。 | 某些地区或账号内容需要 TikTok Cookie；优先 H.264 + AAC + MP4，减少 Telegram 无声问题。 |
+| Instagram | `instagram.com/p/...`、`/reel/...`、`/stories/...` | **重点适配**；视频、图片、Reels 和图集。 | 私密、登录可见或受限内容需要 Instagram Cookie；Story 还受账号权限影响。 |
+| X / Twitter | `x.com/.../status/...`、`twitter.com/...` | **重点适配**；单视频、图片，以及同一帖子内多个视频。 | 受限帖子可能需要 X Cookie；多个媒体会按多项目任务处理。 |
+| YouTube | `youtube.com/watch?v=...`、`youtu.be/...`、Shorts、播放列表 | **重点适配**；视频、音频、Shorts，使用 PO Token provider。 | 年龄限制、会员内容或地区限制可能需要 YouTube Cookie；播放列表会产生多个任务。 |
+| 哔哩哔哩 / Bilibili | `bilibili.com/video/...`、`b23.tv/...` | **通用兼容**；视频、音频，具体清晰度由上游解析器决定。 | 大会员、登录可见或地区限制内容需要 Bilibili Cookie。 |
+| 小红书 / Xiaohongshu | `xiaohongshu.com/explore/...`、分享短链 | **通用兼容**；笔记中的视频或图片，依赖上游解析能力。 | 登录可见笔记需要 Cookie；分享文案中的附加文字应保留完整链接。 |
+| Facebook | `facebook.com/.../videos/...`、Reels | **通用兼容**；公开视频或可访问媒体。 | 私密、登录可见和部分 Reels 需要 Facebook Cookie。 |
+| Vimeo | `vimeo.com/...` | **通用兼容**；公开视频。 | 私密、密码保护或嵌入限制视频通常无法直接解析，除非提供有效登录态。 |
+| Reddit | `reddit.com/r/.../comments/...`、`v.redd.it/...` | **通用兼容**；帖子媒体和视频。 | 被删除、私密社区或地区受限内容无法下载；音视频可能需要合并。 |
+| Twitch | `twitch.tv/videos/...`、Clip | **通用兼容**；公开视频或 Clip。 | 直播回放可用性受平台限制，订阅/地区内容需要对应登录态。 |
+| 快手 / Kuaishou | 快手分享链接 | **实验性通用兼容**；是否成功取决于当前上游 extractor。 | 平台风控较强，可能需要 Cookie；不作为当前核心平台承诺。 |
+| 音频 / 图集站点 | SoundCloud、Pinterest 等 | **通用兼容**；由 `yt-dlp` / `gallery-dl` 支持的媒体类型。 | 具体站点、内容类型和 Cookie 要求以解析器结果为准。 |
+
+### 如何理解支持范围
+
+- **重点适配平台**：微信视频号、抖音、TikTok、Instagram、X/Twitter、YouTube；项目有专门的解析、格式选择、重试或 Cookie 流程，并在本地/VPS 回归测试中优先验证。
+- **通用兼容平台**：Bilibili、小红书、Facebook、Vimeo、Reddit、Twitch、快手和其他 `yt-dlp` / `gallery-dl` 站点。项目不会为每个上游站点维护独立破解逻辑，成功率随上游 extractor 和平台规则变化。
+- **链接格式**：优先发送平台原始 URL 或完整分享文案；不要只发送失效的预览卡片、截图或已经过期的 CDN 直链。
+- **Cookie 规则**：Cookie 是对应平台的登录态，不是通用 Cookie。管理员可以在 Bot 的 Cookie 菜单中更新；每个平台单独保存，绝不会上传到 GitHub 的公开发布包。
+- **下载结果**：视频、音频、图片、图集和多视频帖子会按平台能力返回；Telegram 的文件大小、时长和格式限制仍然适用。
 
 下载器无法保证永久支持所有平台。页面改版、登录要求、地区限制、限流、Cookie 过期和版权规则都可能导致某个平台暂时失败。
 
