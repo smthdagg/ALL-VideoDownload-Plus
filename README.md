@@ -237,6 +237,8 @@ journalctl -u video-download-runtime-cleanup.service -n 50 --no-pager
 
 The Web dashboard cleanup action uses the actual application directory instead of a hard-coded legacy path. Docker container logs are capped at 100 MB per file and three rotated files per service.
 
+Host-bound controls are reported honestly: restart, WireGuard IP rotation, engine upgrades, and list refreshes require the VPS host and are not executed from inside the app container. User approval, blacklist, history, configuration editing, cleanup, metrics, and domain-list editing remain available through the authenticated dashboard.
+
 ```bash
 sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watchdog
 
