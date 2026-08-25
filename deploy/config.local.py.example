@@ -172,4 +172,6 @@ class Config(object):
     DASHBOARD_PORT = 5555
     DASHBOARD_USERNAME = "admin"
     DASHBOARD_PASSWORD = "change_this_password"
+    # Optional public HTTPS base URL. Enables the Web admin button in Telegram.
+    DASHBOARD_PUBLIC_URL = ""
     ACTIVE_SESSIONS_FILE = "CONFIG/.active_sessions.json"

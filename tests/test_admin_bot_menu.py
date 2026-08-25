@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "scripts" / "templates" / "bot_menu.py"
+I18N_PATH = ROOT / "scripts" / "templates" / "private_i18n.py"
 
 
 def load_module():
@@ -35,8 +36,8 @@ class FakeApp:
     def get_bot_commands(self):
         return self.commands
 
-    def set_bot_commands(self, commands, scope=None):
-        self.set_calls.append((commands, scope))
+    def set_bot_commands(self, commands, scope=None, language_code=None):
+        self.set_calls.append((commands, scope, language_code))
 
 
 class AdminBotMenuTest(unittest.TestCase):
@@ -48,6 +49,13 @@ class AdminBotMenuTest(unittest.TestCase):
         pyrogram_types.BotCommandScopeChat = FakeBotCommandScopeChat
         sys.modules.setdefault("pyrogram", pyrogram)
         sys.modules.setdefault("pyrogram.types", pyrogram_types)
+        helpers = types.ModuleType("HELPERS")
+        helpers.__path__ = []
+        spec = importlib.util.spec_from_file_location("HELPERS.private_i18n", I18N_PATH)
+        private_i18n = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(private_i18n)
+        sys.modules.setdefault("HELPERS", helpers)
+        sys.modules.setdefault("HELPERS.private_i18n", private_i18n)
 
     def test_registers_yuanbao_cookie_command_only_for_admin_chats(self):
         module = load_module()
@@ -56,22 +64,19 @@ class AdminBotMenuTest(unittest.TestCase):
 
         module.register_admin_bot_commands(app, [123, "456"])
 
-        self.assertEqual(len(app.set_calls), 2)
-        for commands, scope in app.set_calls:
+        self.assertEqual(len(app.set_calls), 6)
+        global_calls = [call for call in app.set_calls if call[1] is None]
+        self.assertEqual(len(global_calls), 2)
+        zh_commands = next(call[0] for call in global_calls if call[2] == "zh")
+        self.assertEqual(zh_commands[0].description, "开始使用 Bot")
+
+        admin_calls = [call for call in app.set_calls if call[1] is not None]
+        for commands, scope, language_code in admin_calls:
             self.assertEqual(scope.chat_id in (123, 456), True)
-            self.assertEqual(
-                [(item.command, item.description) for item in commands],
-                [
-                    ("start", "Start the bot"),
-                    ("set_yuanbao_cookie", "更新视频号元宝 Cookie"),
-                    ("users", "打开用户管理菜单"),
-                    ("add_user", "添加可使用 Bot 的用户"),
-                    ("remove_user", "移除可使用 Bot 的用户"),
-                    ("list_users", "查看已授权用户"),
-                    ("blacklist_user", "永久拉黑一个用户"),
-                    ("unblacklist_user", "解除用户永久拉黑"),
-                ],
-            )
+            descriptions = dict((item.command, item.description) for item in commands)
+            self.assertEqual(language_code in ("en", "zh"), True)
+            expected = "Open user management" if language_code == "en" else "打开用户管理菜单"
+            self.assertEqual(descriptions["users"], expected)
 
     def test_replaces_an_existing_yuanbao_command_without_duplicates(self):
         module = load_module()
@@ -85,7 +90,9 @@ class AdminBotMenuTest(unittest.TestCase):
 
         module.register_admin_bot_commands(app, [123])
 
-        commands, _ = app.set_calls[0]
+        commands, _, language_code = next(
+            call for call in app.set_calls if call[1] is not None
+        )
         self.assertEqual(
             [item.command for item in commands].count("set_yuanbao_cookie"),
             1,
@@ -93,7 +100,8 @@ class AdminBotMenuTest(unittest.TestCase):
         yuanbao = next(
             item for item in commands if item.command == "set_yuanbao_cookie"
         )
-        self.assertEqual(yuanbao.description, "更新视频号元宝 Cookie")
+        expected = "Update WeChat Channels Cookie" if language_code == "en" else "更新视频号元宝 Cookie"
+        self.assertEqual(yuanbao.description, expected)
 
 
 if __name__ == "__main__":

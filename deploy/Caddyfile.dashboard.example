@@ -1,0 +1,11 @@
+# Public dashboard example for a VPS where host port 443 is already occupied.
+# Copy this into the Caddy service config directory and replace the hostname.
+# Map host ports 80 and 8443 to Caddy container ports 80 and 443.
+
+http://bot-admin.example.com {
+    redir https://bot-admin.example.com:8443{uri} permanent
+}
+
+https://bot-admin.example.com {
+    reverse_proxy app:5555
+}

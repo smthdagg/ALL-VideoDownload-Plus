@@ -1,6 +1,6 @@
-# Credits and Original Work
+# Video Download Bot System: Credits and Original Work
 
-VideoDownload combines a mature open-source Telegram downloader with a focused
+Video Download Bot System combines a mature open-source Telegram downloader with a focused
 private deployment and resolver layer. It is a semi-original project: the core
 downloader engine is based on upstream open source work, while the private
 deployment workflow, Chinese-platform enhancements, tests, and documentation

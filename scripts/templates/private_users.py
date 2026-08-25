@@ -3,10 +3,32 @@ import os
 import threading
 import time
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 
 DEFAULT_PRIVATE_USERS_FILE = Path("CONFIG/private_users.json")
 REQUEST_RETRY_SECONDS = 24 * 60 * 60
+
+
+def build_dashboard_admin_url(value):
+    raw_url = str(value or "").strip()
+    if not raw_url:
+        return None
+    try:
+        parsed = urlsplit(raw_url)
+    except ValueError:
+        return None
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        return None
+    path = parsed.path.rstrip("/") + "/admin/users"
+    return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
 
 
 def normalize_user_id(value):
@@ -31,11 +53,12 @@ def collect_allowed_user_ids(admin_ids, static_user_ids, dynamic_user_ids):
     return allowed
 
 
-def build_access_request_markup():
+def build_access_request_markup(user_id=None):
     from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+    from HELPERS.private_i18n import text
 
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("申请使用权限", callback_data="private_users|request")]
+        [InlineKeyboardButton(text("apply_access", user_id=user_id, language="en" if user_id is None else None), callback_data="private_users|request")]
     ])
 
 

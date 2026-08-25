@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>用户管理 - Telegram 下载 Bot</title>
+    <link rel="stylesheet" href="/static/private-users.css">
+</head>
+<body>
+<header class="topbar">
+    <div>
+        <p class="eyebrow" data-i18n="brand">Telegram 下载 Bot</p>
+        <h1 data-i18n="title">用户管理</h1>
+    </div>
+    <nav class="topbar__actions" aria-label="后台导航" data-i18n-aria="nav_aria">
+        <div class="language-switch" aria-label="语言切换" data-i18n-aria="language_aria">
+            <button type="button" data-ui-language="zh">中文</button>
+            <button type="button" data-ui-language="en">EN</button>
+        </div>
+        <a class="button button--quiet" href="/" data-i18n="dashboard">运行面板</a>
+        <button class="button button--quiet" id="logout-button" type="button" data-i18n="logout">退出登录</button>
+    </nav>
+</header>
+
+<main class="shell">
+    <section class="summary" aria-label="用户数量概览" data-i18n-aria="summary_aria">
+        <div><span data-i18n="pending">待审批</span><strong id="count-pending">-</strong></div>
+        <div><span data-i18n="dynamic">动态授权</span><strong id="count-allowed">-</strong></div>
+        <div><span data-i18n="static">固定授权</span><strong id="count-static">-</strong></div>
+        <div><span data-i18n="blacklist">永久黑名单</span><strong id="count-blacklisted">-</strong></div>
+        <div><span data-i18n="admins">管理员</span><strong id="count-admins">-</strong></div>
+    </section>
+
+    <section class="toolbar" aria-label="用户管理工具" data-i18n-aria="tools_aria">
+        <form id="add-user-form" class="add-form">
+            <label for="add-user-id" data-i18n="add_label">直接授权 Telegram 数字 ID</label>
+            <div class="input-action">
+                <input id="add-user-id" inputmode="numeric" pattern="[0-9]+" placeholder="例如 123456789" data-i18n-placeholder="add_placeholder" required>
+                <button class="button button--primary" type="submit" data-i18n="add">添加用户</button>
+            </div>
+        </form>
+        <div class="search-box">
+            <label for="user-search" data-i18n="search">搜索</label>
+            <input id="user-search" type="search" placeholder="姓名、用户名或数字 ID" data-i18n-placeholder="search_placeholder">
+        </div>
+    </section>
+
+    <section class="workspace">
+        <div class="filters" role="tablist" aria-label="用户状态" data-i18n-aria="status_aria">
+            <button class="filter active" type="button" data-filter="pending" data-i18n="pending">待审批</button>
+            <button class="filter" type="button" data-filter="allowed" data-i18n="allowed">已授权</button>
+            <button class="filter" type="button" data-filter="blacklisted" data-i18n="blacklist_short">黑名单</button>
+            <button class="filter" type="button" data-filter="all" data-i18n="all">全部</button>
+        </div>
+
+        <div id="status-message" class="status-message" role="status" hidden></div>
+        <div id="users-loading" class="state-box" data-i18n="loading">正在读取用户数据...</div>
+        <div id="users-empty" class="state-box" data-i18n="empty" hidden>当前筛选条件下没有用户。</div>
+        <div class="table-wrap" id="users-table-wrap" hidden>
+            <table>
+                <thead>
+                    <tr>
+                        <th data-i18n="user">用户</th>
+                        <th data-i18n="status">状态</th>
+                        <th data-i18n="time_source">时间 / 来源</th>
+                        <th class="actions-heading" data-i18n="actions">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="users-body"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<dialog id="history-dialog">
+    <header class="dialog-header">
+        <div>
+            <p class="eyebrow" data-i18n="downloads">下载记录</p>
+            <h2 id="history-title" data-i18n="history">用户历史</h2>
+        </div>
+        <button class="icon-button" id="history-close" type="button" aria-label="关闭" data-i18n-aria="close_aria">×</button>
+    </header>
+    <div id="history-content" class="history-content"></div>
+</dialog>
+
+<script src="/static/private-users.js" defer></script>
+</body>
+</html>

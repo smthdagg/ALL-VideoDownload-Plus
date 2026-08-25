@@ -39,6 +39,18 @@ The Docker Compose stack is generated inside `vendor/tg-ytdlp-bot` during
 The dashboard is patched to bind to `127.0.0.1` by default. On a VPS, open it
 through an SSH tunnel instead of exposing it to the public internet.
 
+For a VPS that already uses host port 443, the supported public-dashboard
+pattern is Caddy on host port 8443 with `reverse_proxy app:5555`; the example is
+in `deploy/Caddyfile.dashboard.example`. The private `DASHBOARD_PUBLIC_URL`
+must match the public HTTPS hostname and port so secure cookies and the Bot's
+Web administration button are configured correctly.
+
+For a VPS that already uses host port 443, the supported public-dashboard
+pattern is Caddy on host port 8443 with `reverse_proxy app:5555`; the example is
+in `deploy/Caddyfile.dashboard.example`. The private `DASHBOARD_PUBLIC_URL`
+must match the public HTTPS hostname and port so secure cookies and the Bot's
+Web administration button are configured correctly.
+
 ## Patch Strategy
 
 `scripts/apply-private-hardening.py` applies local changes after the upstream
@@ -65,4 +77,3 @@ The following files are runtime state and must not be committed:
 - `vendor/tg-ytdlp-bot/.env`
 - `vendor/tg-ytdlp-bot/magic.session`
 - generated archives, downloads, logs, and cache files.
-
