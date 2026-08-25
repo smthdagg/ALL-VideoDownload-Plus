@@ -321,13 +321,24 @@ def deny_private_user(message):
     desired_denial = helper[helper.index("def deny_private_user(message):"):]
     if text[start:end] != desired_denial:
         path.write_text(text[:start] + desired_denial + text[end:], encoding="utf-8")
-    replace_once(
-        path,
-        """def is_user_in_channel(app, message):
+    private_channel_block = """def is_user_in_channel(app, message):
+    messages = safe_get_messages(message.chat.id)
+    try:
+        chat_type = getattr(getattr(message, "chat", None), "type", None)
+        chat_id = int(getattr(message.chat, "id", 0))
+        if str(chat_type).lower().endswith("private") and not is_private_user_allowed(chat_id):
+            return deny_private_user(message)
+        if str(chat_type).lower().endswith("private"):
+            return True
+    except Exception:
+        pass
+    # Bypass subscription checks for explicitly allowed groups
+"""
+    original_channel_block = """def is_user_in_channel(app, message):
     messages = safe_get_messages(message.chat.id)
     # Bypass subscription checks for explicitly allowed groups
-""",
-        """def is_user_in_channel(app, message):
+"""
+    current_channel_block = """def is_user_in_channel(app, message):
     messages = safe_get_messages(message.chat.id)
     try:
         chat_type = getattr(getattr(message, "chat", None), "type", None)
@@ -337,8 +348,15 @@ def deny_private_user(message):
     except Exception:
         pass
     # Bypass subscription checks for explicitly allowed groups
-""",
-    )
+"""
+    text = path.read_text(encoding="utf-8")
+    if "if str(chat_type).lower().endswith(\"private\"):\n            return True" not in text:
+        if original_channel_block in text:
+            path.write_text(text.replace(original_channel_block, private_channel_block, 1), encoding="utf-8")
+        elif current_channel_block in text:
+            path.write_text(text.replace(current_channel_block, private_channel_block, 1), encoding="utf-8")
+        else:
+            raise RuntimeError(f"Expected channel check block not found in {path}")
     replace_once(
         path,
         """    # Create The User Folder Inside The "Users" Directory

@@ -97,6 +97,17 @@ class MigrationContractTest(unittest.TestCase):
         self.assertIn('DASHBOARD_DOMAIN="${DASHBOARD_DOMAIN:-}"', public_text)
         self.assertIn("bot-admin.example.com", public_text)
 
+    def test_private_users_bypass_optional_channel_subscription_check(self):
+        hardening = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")
+        self.assertIn(
+            "if str(chat_type).lower().endswith(\"private\") and not is_private_user_allowed(chat_id):",
+            hardening,
+        )
+        self.assertIn(
+            "if str(chat_type).lower().endswith(\"private\"):\n            return True",
+            hardening,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
