@@ -26,7 +26,7 @@ were custom-developed with Codex assistance.
 ## Original Work In This Repository
 
 - Local and VPS bootstrap scripts.
-- Public-safe and private migration packaging modes.
+- Public-safe packaging plus consistent private VPS migration and restore tooling.
 - Private-mode authorization defaults for personal Telegram bot use.
 - Dashboard localhost binding and Docker deployment hardening.
 - Douyin share-text cleanup, short-link normalization, mobile page parsing, and
@@ -34,7 +34,8 @@ were custom-developed with Codex assistance.
 - WeChat Channels public-link resolver and optional Yuanbao cookie fallback.
 - Telegram admin command for updating Yuanbao cookies without editing files on
   the server.
-- TikTok H.264 + AAC MP4 format preference to avoid silent Telegram playback.
+- TikTok H.264 + AAC MP4 format preference and bounded challenge-response retries.
+- Docker build-context privacy rules that exclude credentials and runtime state.
 - Tests for custom Douyin and WeChat Channels parsing.
 - English and Chinese project documentation.
 - Project organization, documentation, and release cleanup completed with Codex

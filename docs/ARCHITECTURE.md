@@ -45,12 +45,6 @@ in `deploy/Caddyfile.dashboard.example`. The private `DASHBOARD_PUBLIC_URL`
 must match the public HTTPS hostname and port so secure cookies and the Bot's
 Web administration button are configured correctly.
 
-For a VPS that already uses host port 443, the supported public-dashboard
-pattern is Caddy on host port 8443 with `reverse_proxy app:5555`; the example is
-in `deploy/Caddyfile.dashboard.example`. The private `DASHBOARD_PUBLIC_URL`
-must match the public HTTPS hostname and port so secure cookies and the Bot's
-Web administration button are configured correctly.
-
 ## Patch Strategy
 
 `scripts/apply-private-hardening.py` applies local changes after the upstream
@@ -65,8 +59,9 @@ Main patch areas:
 - custom Douyin direct-video resolution;
 - custom WeChat Channels resolution and Yuanbao cookie fallback;
 - Telegram admin command for updating Yuanbao cookies;
-- TikTok H.264 + AAC MP4 preference for Telegram playback compatibility;
+- TikTok H.264 + AAC MP4 preference and bounded challenge retries;
 - Docker Compose sidecars for cookies, PO token helper, and optional Douyin API.
+- private/public migration packaging with automatic source-service recovery.
 
 ## Private Files
 

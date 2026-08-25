@@ -63,6 +63,23 @@ passwords:
 - rotate them when a device, browser, or account changes;
 - remove them before sharing logs or archives.
 
+## Docker Images And Migration Archives
+
+The generated `.dockerignore` excludes `.env`, Cookie files, Telegram sessions,
+dynamic users, per-user directories, and runtime databases from Docker build
+layers. Do not remove these exclusions to make a build "easier"; Compose mounts
+runtime state from the VPS filesystem after the container starts.
+
+`scripts/package-for-vps.sh` creates a public-safe archive by default. Private
+migration mode contains credentials and account state. On a running VPS, use
+`scripts/prepare-vps-migration.sh` so the Bot session is stopped consistently
+and automatically restarted afterward. Private archives and checksum files are
+mode 600 and belong only in a root-owned directory or trusted encrypted storage.
+
+Private migration packages intentionally exclude downloaded media, transient
+logs, Caddy TLS storage, SSH keys, caches, and older archives. Inspect archive
+member names and verify the SHA-256 checksum before extraction.
+
 ## Pre-Publish Checklist
 
 Before pushing:

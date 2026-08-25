@@ -200,13 +200,22 @@ scripts/local-up.sh
 scripts/package-for-vps.sh
 ```
 
-如果是你自己的 VPS 迁移包，需要包含本地真实配置、cookies、session，可显式使用：
+底层私有迁移包会包含配置、Cookie、Session、动态用户权限和用户偏好，可显式使用：
 
 ```bash
 scripts/package-for-vps.sh --include-private
 ```
 
 注意：`--include-private` 生成的包必须私密保存，不能上传 GitHub。
+
+从正在运行的 VPS 生成一致的迁移包时，应使用会短暂停止并自动恢复 Bot 容器的封装脚本：
+
+```bash
+sudo scripts/prepare-vps-migration.sh
+```
+
+完整传输、恢复、验收和回滚步骤见
+[中文部署与迁移手册](docs/DEPLOYMENT.zh-CN.md)。
 
 上传并启动（以下示例使用 SSH 端口 `2222`）：
 
@@ -232,12 +241,12 @@ ssh -p 2222 -L 5555:127.0.0.1:5555 root@YOUR_VPS
 http://localhost:5555
 ```
 
-本项目当前参考 VPS 已将后台发布到：
-`https://v.oaclub.com:8443`。由于 VPS 的 443 端口已经被现有代理服务占用，后台使用 Caddy 的 8443 端口。以后可以在 VPS 上执行下面的脚本恢复同样配置：
+如果 VPS 的 443 端口已经被其他服务占用，可以使用 Caddy 的 8443
+端口，并明确传入该部署自己的后台域名：
 
 ```bash
 cd /opt/video-download-bot
-scripts/configure-vps-dashboard.sh
+DASHBOARD_DOMAIN=bot-admin.example.com scripts/configure-vps-dashboard.sh
 ```
 
 脚本会先备份 Compose 文件、Caddy 配置和私有后台配置，再应用域名配置。
@@ -245,6 +254,12 @@ scripts/configure-vps-dashboard.sh
 ### VPS 自检循环
 
 VPS 24 小时运行时，建议安装系统级 watchdog。它每分钟从外部检查 Docker、app 容器、系统时间同步，以及 Telegram Pyrogram session 是否真的启动。遇到 Telegram 时间漂移、近期 Python/Telegram 崩溃、容器停止等情况时，只重启 `app` 服务，不会重启整台 VPS。
+
+使用一个命令同时安装 watchdog 和磁盘清理定时器：
+
+```bash
+sudo scripts/install-vps-operations.sh
+```
 
 ### 自动清理与磁盘保护
 

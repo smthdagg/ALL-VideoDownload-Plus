@@ -4,9 +4,18 @@ set -euo pipefail
 # Configure the public dashboard when the VPS already uses host port 443.
 PROJECT_DIR="${PROJECT_DIR:-/opt/video-download-bot}"
 APP_DIR="${APP_DIR:-$PROJECT_DIR/vendor/tg-ytdlp-bot}"
-DASHBOARD_DOMAIN="${DASHBOARD_DOMAIN:-v.oaclub.com}"
+DASHBOARD_DOMAIN="${DASHBOARD_DOMAIN:-}"
 DASHBOARD_HTTPS_PORT="${DASHBOARD_HTTPS_PORT:-8443}"
 BACKUP_ROOT="${BACKUP_ROOT:-/opt/video-download-backups}"
+
+if [ -z "$DASHBOARD_DOMAIN" ]; then
+  echo "Set DASHBOARD_DOMAIN to the public dashboard hostname" >&2
+  exit 2
+fi
+if ! printf '%s' "$DASHBOARD_DOMAIN" | grep -Eq '^[A-Za-z0-9.-]+$'; then
+  echo "DASHBOARD_DOMAIN contains invalid characters" >&2
+  exit 2
+fi
 
 if [ ! -f "$APP_DIR/docker-compose.yml" ] || [ ! -f "$PROJECT_DIR/deploy/config.local.py" ]; then
   echo "Missing deployed project or private config under $PROJECT_DIR" >&2

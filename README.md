@@ -182,13 +182,23 @@ Public-safe archive, without secrets:
 scripts/package-for-vps.sh
 ```
 
-Personal migration archive, including local config/cookies/session:
+Low-level private archive, including config, cookies, session, user access, and preferences:
 
 ```bash
 scripts/package-for-vps.sh --include-private
 ```
 
 Keep `--include-private` archives private. They may contain Telegram credentials, cookies, and session files.
+
+For a consistent migration from a running VPS, use the wrapper that briefly
+stops and automatically restores only the Bot container:
+
+```bash
+sudo scripts/prepare-vps-migration.sh
+```
+
+The complete transfer, activation, acceptance, and rollback procedure is in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 Upload (example with SSH port `2222`):
 
@@ -210,13 +220,12 @@ ssh -p 2222 -L 5555:127.0.0.1:5555 root@YOUR_VPS
 
 Then browse `http://localhost:5555`.
 
-The reference VPS deployment in this repository publishes the dashboard at
-`https://v.oaclub.com:8443`. Host port 443 is already used by the VPS proxy, so
-the dashboard uses Caddy on 8443. Recreate this setup with:
+When host port 443 is already occupied, publish the dashboard through Caddy on
+8443 with an explicit deployment hostname:
 
 ```bash
 cd /opt/video-download-bot
-scripts/configure-vps-dashboard.sh
+DASHBOARD_DOMAIN=bot-admin.example.com scripts/configure-vps-dashboard.sh
 ```
 
 The script backs up the current Compose file, Caddyfile, and private dashboard
@@ -225,6 +234,12 @@ configuration before applying the change.
 ### VPS Watchdog Loop
 
 For 24/7 VPS use, install the system-level watchdog loop. It checks Docker, the app container, NTP time sync, and whether the Telegram Pyrogram session actually started. If the bot hits Telegram time-drift errors or a recent Python/Telegram crash, it restarts only the `app` service.
+
+Install both the watchdog and storage cleanup timers with:
+
+```bash
+sudo scripts/install-vps-operations.sh
+```
 
 ### Runtime storage cleanup
 
