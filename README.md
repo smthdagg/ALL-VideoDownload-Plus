@@ -26,6 +26,18 @@ quality, cleanup, and language commands in one readable panel.
 
 ![Chinese Bot Help preview](docs/images/bot-help-zh.png)
 
+### Dashboard and settings preview
+
+The screenshots show the bilingual Bot settings menu, the separate Web
+dashboard login, and the user-approval management view. Dashboard credentials
+are independent from Telegram IDs.
+
+![Bot settings preview](docs/images/bot-settings-zh.png)
+
+![Dashboard login preview](docs/images/dashboard-login-zh.png)
+
+![Dashboard user management preview](docs/images/dashboard-users-zh.png)
+
 ### 中文快速开始
 
 ```bash

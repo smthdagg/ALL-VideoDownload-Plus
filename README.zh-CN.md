@@ -21,6 +21,16 @@ ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目�
 
 ![中文 Bot Help 预览](docs/images/bot-help-zh.png)
 
+### 设置与后台界面预览
+
+以下界面图展示 Bot 设置菜单、中文 / English 切换、独立的 Web 后台登录，以及用户申请审批管理。Web 后台账号密码与 Telegram 数字 ID 完全独立。
+
+![Bot 设置预览](docs/images/bot-settings-zh.png)
+
+![后台登录预览](docs/images/dashboard-login-zh.png)
+
+![用户管理后台预览](docs/images/dashboard-users-zh.png)
+
 ## 当前版本范围
 
 - **Bot 使用体验：**中英文 Help、Telegram 本地化命令菜单、`/lang`、`/settings`、画质预设、Cookie 工具和平台专项向导。
