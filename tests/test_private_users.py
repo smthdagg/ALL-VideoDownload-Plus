@@ -17,6 +17,27 @@ def load_module():
 
 
 class PrivateUserStoreTest(unittest.TestCase):
+    def test_dashboard_url_requires_clean_https_url(self):
+        module = load_module()
+
+        self.assertEqual(
+            module.build_dashboard_admin_url("https://bot.example.com"),
+            "https://bot.example.com/admin/users",
+        )
+        self.assertEqual(
+            module.build_dashboard_admin_url("https://bot.example.com/base/"),
+            "https://bot.example.com/base/admin/users",
+        )
+        for value in (
+            "",
+            "http://bot.example.com",
+            "https://user:pass@bot.example.com",
+            "https://bot.example.com?token=secret",
+            "javascript:alert(1)",
+        ):
+            with self.subTest(value=value):
+                self.assertIsNone(module.build_dashboard_admin_url(value))
+
     def test_add_remove_and_reload_users(self):
         module = load_module()
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -175,7 +196,7 @@ class PrivateUserStoreTest(unittest.TestCase):
                 sys.modules["pyrogram.types"] = previous_types
 
         button = markup.inline_keyboard[0][0]
-        self.assertEqual(button.text, "申请使用权限")
+        self.assertEqual(button.text, "Apply for access")
         self.assertEqual(button.callback_data, "private_users|request")
 
 

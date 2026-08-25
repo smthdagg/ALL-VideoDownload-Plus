@@ -1,15 +1,30 @@
-# VideoDownload Telegram Bot
+# Video Download Bot System
 
-Private-first Telegram video downloader for TikTok, Douyin, WeChat Channels / Weixin Video, YouTube, Instagram, X/Twitter, Bilibili, Xiaohongshu, and other platforms, designed for self-hosting on Docker or a VPS.
+Video Download Bot System is a private-first Telegram downloader focused on WeChat Channels / Weixin Video, Douyin, TikTok, Instagram, X/Twitter, and YouTube, with additional support for Bilibili, Xiaohongshu, and other compatible platforms. Send a platform link to the Bot and receive the downloaded media in Telegram.
 
 This repository is a deployment wrapper and patch set around
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot). It keeps the upstream bot as the engine, then adds private-mode defaults, safer dashboard binding, Douyin handling, WeChat Channels handling, TikTok Telegram compatibility, and deployment scripts. This is a semi-original project built through custom development with Codex assistance: the mature downloader engine is upstream, while the deployment layer, privacy hardening, Chinese-platform resolvers, tests, and documentation are custom work in this repo.
 
 中文说明见 [README.zh-CN.md](README.zh-CN.md).
 
+## Supported Platforms
+
+| Platform | Typical links | Notes |
+| --- | --- | --- |
+| WeChat Channels / Weixin Video | `weixin.qq.com/sph/...` | Public links are tried first; some links need a Yuanbao cookie fallback. |
+| Douyin | `v.douyin.com/...`, `douyin.com/...` | Share text and short links are normalized; optional cookie/API resolver support is available. |
+| TikTok | `tiktok.com/...` | Prefers Telegram-compatible H.264 + AAC MP4 when possible. |
+| Instagram | posts, reels, images | A valid cookie may be required for restricted media. |
+| X / Twitter | `x.com/...`, `twitter.com/...` | Supports posts containing multiple videos. |
+| YouTube | `youtube.com/...`, `youtu.be/...` | Uses the bundled PO-token provider and optional cookies. |
+| Other compatible sites | Bilibili, Xiaohongshu, and many `yt-dlp` / `gallery-dl` sites | Availability follows the platform and upstream extractor. |
+
+No downloader can guarantee permanent access to every platform. Platform changes, login requirements, regional restrictions, rate limits, expired cookies, and copyright rules can affect results.
+
 ## Features
 
 - Telegram bot downloads videos from TikTok, Douyin, WeChat Channels / Weixin Video, YouTube, Instagram, X/Twitter, Bilibili, Xiaohongshu, and many other `yt-dlp` / `gallery-dl` supported sites.
+- Complete Chinese / English UI for Bot messages, command menus, common errors, guides, the Web login, operations dashboard, and user administration. First contact follows the Telegram client language, while `/lang` switches it manually.
 - Private-use access control: admins and explicitly allowed Telegram user IDs only.
 - Local Docker workflow for testing before VPS deployment.
 - VPS-friendly Docker Compose stack.
@@ -31,6 +46,8 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 
 - **Private-by-default access control**: config template is oriented around one-person or small-circle use, with `ADMIN`, `PRIVATE_ALLOWED_USERS`, and group access disabled unless explicitly configured.
 - **Safer dashboard exposure**: Docker Compose binds the dashboard to `127.0.0.1:5555` by default, so VPS users can access it through SSH tunnel instead of exposing it to the public internet.
+- **Two-level user administration**: frequent approval and blocking actions stay in Telegram, while the Web dashboard adds search, status filters, history, and a fuller management view.
+- **Complete bilingual UI**: Bot messages, menus, download status, common errors, Cookie guides, Web login, operations dashboard, and user administration support Chinese and English; the Web UI remembers the most recent choice.
 - **Douyin resolver chain**: Douyin share text and short links are normalized; the resolver tries mobile page metadata first, then optional `Evil0ctal/Douyin_TikTok_Download_API`, then optional remote resolver or captured resolver output.
 - **WeChat Channels support**: adds a resolver for `weixin.qq.com/sph/...` links, including a Yuanbao cookie fallback when the public page only exposes preview metadata.
 - **Telegram admin cookie update**: `/set_yuanbao_cookie` lets an admin update Yuanbao cookies directly in Telegram by replying with a cookie file or raw Cookie header.
@@ -40,6 +57,14 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **VPS watchdog loop**: `scripts/vps-watchdog.sh` checks Docker, the app container, NTP time sync, and Pyrogram session startup, then restarts only the bot service when it detects time-drift or crash symptoms.
 - **Patch-driven upstream workflow**: local changes are encoded in `scripts/apply-private-hardening.py` and `scripts/templates/`, so the upstream bot can be re-cloned and patched reproducibly.
 - **Focused tests**: resolver tests cover custom Douyin mobile and WeChat Channels behavior.
+
+## Chinese / English Interface
+
+- On first private contact, the Bot uses the language reported by the Telegram client. Chinese clients receive Chinese; other languages default to English.
+- Send `/lang` for language buttons, or use `/lang zh` and `/lang en`. The preference is stored per numeric Telegram ID and survives restarts.
+- Global and administrator Telegram command menus are registered separately in Chinese and English.
+- The Web login, operations dashboard, and `/admin/users` page each provide a `中文 / EN` switch and share the saved browser preference.
+- A third-party downloader may still return English technical fields from a website or `yt-dlp`; the Bot wraps common failures in the selected UI language while detailed diagnostics remain in server logs.
 
 ## What This Repo Contains
 
@@ -61,6 +86,14 @@ Ignored private/runtime files include:
 - `vendor/tg-ytdlp-bot/.env`
 - `vendor/tg-ytdlp-bot/magic.session`
 - generated package archives and runtime downloads/logs.
+
+## Requirements
+
+- Docker Engine or Docker Desktop
+- Docker Compose v2
+- Git
+- Python 3 for patch and test scripts
+- A Linux VPS with sufficient disk space for 24/7 deployment
 
 ## Quick Start: Local Docker
 
@@ -90,6 +123,7 @@ The first run creates `deploy/config.local.py`. Fill in:
 - `BOT_TOKEN`
 - `LOGS_ID`
 - `DASHBOARD_PASSWORD`
+- `DASHBOARD_PUBLIC_URL` (optional; only HTTPS URLs enable the Web admin button in Telegram)
 
 Then run:
 
@@ -97,6 +131,8 @@ Then run:
 scripts/init-local.sh
 scripts/local-up.sh
 ```
+
+Do not run the same Bot account locally and on the VPS at the same time. Two active Telegram sessions can cause duplicate handlers or session conflicts.
 
 Dashboard:
 
@@ -152,11 +188,11 @@ scripts/package-for-vps.sh --include-private
 
 Keep `--include-private` archives private. They may contain Telegram credentials, cookies, and session files.
 
-Upload:
+Upload (example with SSH port `2222`):
 
 ```bash
-scp video-download-bot-vps.tar.gz root@YOUR_VPS:/opt/
-ssh root@YOUR_VPS
+scp -P 2222 video-download-bot-vps.tar.gz root@YOUR_VPS:/opt/
+ssh -p 2222 root@YOUR_VPS
 mkdir -p /opt/video-download-bot
 tar -xzf /opt/video-download-bot-vps.tar.gz -C /opt/video-download-bot --strip-components=1
 cd /opt/video-download-bot
@@ -167,10 +203,22 @@ scripts/local-up.sh
 Open dashboard over SSH tunnel:
 
 ```bash
-ssh -L 5555:127.0.0.1:5555 root@YOUR_VPS
+ssh -p 2222 -L 5555:127.0.0.1:5555 root@YOUR_VPS
 ```
 
 Then browse `http://localhost:5555`.
+
+The reference VPS deployment in this repository publishes the dashboard at
+`https://v.oaclub.com:8443`. Host port 443 is already used by the VPS proxy, so
+the dashboard uses Caddy on 8443. Recreate this setup with:
+
+```bash
+cd /opt/video-download-bot
+scripts/configure-vps-dashboard.sh
+```
+
+The script backs up the current Compose file, Caddyfile, and private dashboard
+configuration before applying the change.
 
 ### VPS Watchdog Loop
 
@@ -181,7 +229,7 @@ sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watch
 
 sudo tee /etc/systemd/system/video-download-watchdog.service >/dev/null <<'EOF'
 [Unit]
-Description=VideoDownload bot watchdog
+Description=Video Download Bot System watchdog
 Wants=docker.service
 After=docker.service network-online.target
 
@@ -195,7 +243,7 @@ EOF
 
 sudo tee /etc/systemd/system/video-download-watchdog.timer >/dev/null <<'EOF'
 [Unit]
-Description=Run VideoDownload bot watchdog every minute
+Description=Run Video Download Bot System watchdog every minute
 
 [Timer]
 OnBootSec=2min
@@ -295,8 +343,11 @@ Recommended workflow:
 3. Copy the request `Cookie` header, or export it as a cookie file.
 4. As an admin, open `/settings` -> Cookies -> `Update WeChat Channels Yuanbao Cookie`, or select `/set_yuanbao_cookie` from the Telegram command menu.
 5. Paste the Cookie on the command line. For a long Cookie or a cookie file, send it first and then reply to that message with `/set_yuanbao_cookie`.
+6. Send `/set_yuanbao_cookie` without an argument whenever you need the complete capture and update guide in the currently selected Bot language.
 
 The Yuanbao menu entries are registered only for administrator chats. Other users cannot see the scoped command or use the update handler.
+
+Treat all cookies as passwords. They can expire when the platform logs out the account, changes security checks, or invalidates the session. Never commit them, paste them into GitHub, or include them in public packages.
 
 If the Yuanbao request returns HTTP `401`, the saved cookie has expired or been rejected. Log in again and repeat the steps above. Yuanbao occasionally changes its internal API paths, so capture a cookie from the current web app instead of relying on an old endpoint-specific tutorial.
 
@@ -337,6 +388,24 @@ Administrators can maintain the runtime allowlist directly in Telegram without r
 - `/unblacklist_user 123456789` removes the permanent block; the user must apply again or be added manually.
 - `/log 123456789` shows that user's download history to an administrator.
 
+Telegram management actions are authorized by the numeric IDs in `ADMIN` and do not ask for another password. `/users` handles routine work. When `DASHBOARD_PUBLIC_URL` is configured, the menu also contains an `Open Web administration` button.
+
+The Web user-management page is available at `/admin/users` and includes:
+
+- counts for pending, dynamic, configuration-managed, administrator, and permanently blacklisted accounts;
+- status filters and search by name, Telegram username, or numeric ID;
+- add, approve, reject, revoke, permanently blacklist, and unblacklist actions;
+- the latest 100 download-history entries for a selected user;
+- full removal/blacklist protection for administrators, plus removal protection with blacklist override for `PRIVATE_ALLOWED_USERS`.
+
+The Web dashboard always requires its independent `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD`; Telegram administrator status does not automatically log a browser in. To enable the Bot link, first place the dashboard behind an HTTPS reverse proxy and configure:
+
+```python
+DASHBOARD_PUBLIC_URL = "https://bot-admin.example.com"
+```
+
+HTTP URLs, URLs containing credentials, and temporary URLs with query parameters are rejected. Leave this setting empty when the dashboard is accessed only through an SSH tunnel; the Bot will then hide the Web link.
+
 Users listed in `PRIVATE_ALLOWED_USERS` remain configuration-managed and must be removed from `deploy/config.local.py` followed by a restart. Removing a user revokes access but does not erase historical logs or the user's server-side directory.
 
 Private chats, returned media, temporary downloads, uploaded user cookies, format preferences, and `/usage` records are separated by Telegram user ID. Service-level resolver cookies, the Yuanbao cookie, sidecars, and public metadata caches remain shared by the bot instance. Other users cannot browse each other's files or logs; administrators can inspect a specific user's history with `/log`.
@@ -353,7 +422,7 @@ https://t.me/YOUR_BOT_USERNAME?start=request_access
 
 The user opens the Bot and presses Start. Because the account is not yet authorized, the Bot displays an `Apply for access` button. Pressing it creates one pending request and sends every administrator an approval message containing the applicant's name, username, and numeric Telegram ID.
 
-An administrator presses `Approve`, `Reject`, or `Permanently blacklist` in Telegram. Approval updates the runtime allowlist immediately and notifies the applicant; no restart is required. Only one pending request is allowed per user, so repeated clicks do not generate repeated administrator notifications. A rejected account must wait 24 hours before submitting another request.
+An administrator can press `Approve`, `Reject`, or `Permanently blacklist` in Telegram, or process requests from the Web user-management page. Approval updates the runtime allowlist immediately and notifies the applicant; no restart is required. Only one pending request is allowed per user, so repeated clicks do not generate repeated administrator notifications. A rejected account must wait 24 hours before submitting another request.
 
 Permanent blacklisting overrides both dynamic and configuration-file authorization, immediately revokes existing access, removes pending requests, and hides the application button from that account. Only an administrator can restore eligibility with `/unblacklist_user USER_ID`. Pending requests and permanently blacklisted IDs also appear in `/users`.
 

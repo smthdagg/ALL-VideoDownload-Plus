@@ -1,6 +1,6 @@
-# VideoDownload Telegram Bot
+# Video Download Bot System
 
-一个适合个人自部署的 Telegram 视频下载 bot，重点支持 TikTok、抖音、微信视频号 / WeChat Channels、YouTube、Instagram、X/Twitter、Bilibili、小红书等平台，支持本地 Docker 测试和 VPS 24 小时运行。
+Video Download Bot System 是一个适合个人自部署的 Telegram 下载 Bot，重点支持微信视频号、抖音、TikTok、Instagram、X、YouTube，同时兼容 Bilibili、小红书以及其他支持良好的平台。用户只需要把平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
 
 本项目不是从零重写下载器，而是基于
 [`upekshaip/tg-ytdlp-bot`](https://github.com/upekshaip/tg-ytdlp-bot)
@@ -8,9 +8,24 @@
 
 English documentation: [README.md](README.md).
 
+## 重点支持平台
+
+| 平台 | 常见链接 | 说明 |
+| --- | --- | --- |
+| 微信视频号 / WeChat Channels | `weixin.qq.com/sph/...` | 优先解析公开链接；部分链接需要元宝 Cookie fallback。 |
+| 抖音 / Douyin | `v.douyin.com/...`、`douyin.com/...` | 支持分享文案、短链归一化，可选 Cookie 和解析 API。 |
+| TikTok | `tiktok.com/...` | 尽量选择 Telegram 兼容的 H.264 + AAC MP4。 |
+| Instagram | 帖子、Reels、图片 | 私密或受限制内容通常需要有效 Cookie。 |
+| X / Twitter | `x.com/...`、`twitter.com/...` | 支持一个帖子中的多个视频。 |
+| YouTube | `youtube.com/...`、`youtu.be/...` | 使用 PO Token provider，也支持可选 Cookie。 |
+| 其他兼容站点 | Bilibili、小红书及大量 `yt-dlp` / `gallery-dl` 站点 | 实际可用性取决于平台变化和上游解析器。 |
+
+下载器无法保证永久支持所有平台。页面改版、登录要求、地区限制、限流、Cookie 过期和版权规则都可能导致某个平台暂时失败。
+
 ## 功能
 
 - Telegram 内直接发送链接，bot 下载并回传视频。
+- Bot 和 Web 后台均支持中文 / English：首次私聊会按 Telegram 客户端语言自动选择，也可随时发送 `/lang` 手动切换；登录页、运行面板、用户管理、按钮、常见错误和使用向导会同步切换。
 - 主要支持 TikTok、抖音、微信视频号 / WeChat Channels、YouTube、Instagram、X/Twitter、Bilibili、小红书，以及大量 `yt-dlp` / `gallery-dl` 支持的网站。
 - 默认私有使用：
   - 只有 `ADMIN` 和 `PRIVATE_ALLOWED_USERS` 可以私聊使用；
@@ -36,6 +51,8 @@ English documentation: [README.md](README.md).
 
 - **默认私有使用**：配置模板围绕个人或小范围使用设计，通过 `ADMIN`、`PRIVATE_ALLOWED_USERS` 控制私聊权限，群组默认不开放。
 - **后台更安全**：Docker Compose 默认把 Dashboard 绑定到 `127.0.0.1:5555`，VPS 上建议用 SSH tunnel 打开，不直接暴露公网。
+- **两层用户管理**：管理员可在 Bot 内完成审批、拒绝、授权、撤权和永久拉黑；Web 后台提供搜索、状态筛选、用户历史和更完整的操作界面。
+- **完整双语界面**：Bot 消息、命令菜单、设置、下载状态、常见错误、Cookie 向导，以及 Web 登录页、运行面板和用户管理页均提供中文 / English；Web 会记住最近选择的语言。
 - **抖音解析链路**：支持抖音分享文案、短链归一化；优先尝试移动端页面数据，再尝试可选的 `Evil0ctal/Douyin_TikTok_Download_API` sidecar、远程解析接口或 Reqable 抓包输出。
 - **视频号解析**：增加 `weixin.qq.com/sph/...` 解析；公开页面只有预览信息时，可用 Yuanbao cookie 作为 fallback。
 - **Telegram 内更新 cookie**：管理员可用 `/set_yuanbao_cookie`，直接在 Telegram 里回复 cookie 文件或 Cookie header 来更新元宝 cookie。
@@ -45,6 +62,14 @@ English documentation: [README.md](README.md).
 - **VPS 自检循环**：`scripts/vps-watchdog.sh` 从系统层检查 Docker、app 容器、NTP 时间同步和 Pyrogram session；发现时间漂移或崩溃迹象时只重启 bot 服务。
 - **补丁化维护上游**：自定义修改集中在 `scripts/apply-private-hardening.py` 和 `scripts/templates/`，以后重新 clone 上游 bot 后可以重复打补丁。
 - **聚焦测试**：为自定义的抖音移动端解析、视频号解析保留了单元测试。
+
+## 中文 / English 界面
+
+- 新用户第一次私聊 Bot 时，会优先使用 Telegram 客户端上报的语言；中文地区使用中文，其他语言默认 English。
+- 发送 `/lang` 打开语言按钮，或直接发送 `/lang zh`、`/lang en`。选择会按 Telegram 数字 ID 保存，重启后仍然有效。
+- Telegram 的普通命令菜单和管理员命令菜单会分别注册中文与英文说明。
+- Web 登录页、运行面板和 `/admin/users` 用户管理页右上角都有 `中文 / EN` 开关，并在浏览器中保存选择。
+- 下载器底层返回的第三方原始错误可能包含网站或 `yt-dlp` 的英文技术字段；Bot 会在外层提供当前语言的可读错误说明，详细技术信息只保留在服务端日志中。
 
 ## 项目结构
 
@@ -72,6 +97,14 @@ vendor/tg-ytdlp-bot
 - `vendor/tg-ytdlp-bot/.env`
 - `vendor/tg-ytdlp-bot/magic.session`
 - 下载文件、日志、缓存、打包压缩包。
+
+## 环境要求
+
+- Docker Engine 或 Docker Desktop
+- Docker Compose v2
+- Git
+- Python 3（用于补丁脚本和测试）
+- 具备足够磁盘空间的 Linux VPS（用于 24 小时运行）
 
 ## 本地 Docker 安装
 
@@ -107,6 +140,7 @@ deploy/config.local.py
 - `BOT_TOKEN`
 - `LOGS_ID`
 - `DASHBOARD_PASSWORD`
+- `DASHBOARD_PUBLIC_URL`（可选；只有 HTTPS 地址才会在 Bot 菜单显示 Web 后台按钮）
 
 然后再次运行：
 
@@ -114,6 +148,8 @@ deploy/config.local.py
 scripts/init-local.sh
 scripts/local-up.sh
 ```
+
+不要让本地和 VPS 同时运行同一个 Bot。两个 Telegram 会话可能造成重复响应或 Session 冲突。
 
 Dashboard：
 
@@ -169,11 +205,11 @@ scripts/package-for-vps.sh --include-private
 
 注意：`--include-private` 生成的包必须私密保存，不能上传 GitHub。
 
-上传并启动：
+上传并启动（以下示例使用 SSH 端口 `2222`）：
 
 ```bash
-scp video-download-bot-vps.tar.gz root@YOUR_VPS:/opt/
-ssh root@YOUR_VPS
+scp -P 2222 video-download-bot-vps.tar.gz root@YOUR_VPS:/opt/
+ssh -p 2222 root@YOUR_VPS
 mkdir -p /opt/video-download-bot
 tar -xzf /opt/video-download-bot-vps.tar.gz -C /opt/video-download-bot --strip-components=1
 cd /opt/video-download-bot
@@ -184,7 +220,7 @@ scripts/local-up.sh
 Dashboard 建议通过 SSH tunnel 打开：
 
 ```bash
-ssh -L 5555:127.0.0.1:5555 root@YOUR_VPS
+ssh -p 2222 -L 5555:127.0.0.1:5555 root@YOUR_VPS
 ```
 
 然后浏览器访问：
@@ -192,6 +228,16 @@ ssh -L 5555:127.0.0.1:5555 root@YOUR_VPS
 ```text
 http://localhost:5555
 ```
+
+本项目当前参考 VPS 已将后台发布到：
+`https://v.oaclub.com:8443`。由于 VPS 的 443 端口已经被现有代理服务占用，后台使用 Caddy 的 8443 端口。以后可以在 VPS 上执行下面的脚本恢复同样配置：
+
+```bash
+cd /opt/video-download-bot
+scripts/configure-vps-dashboard.sh
+```
+
+脚本会先备份 Compose 文件、Caddy 配置和私有后台配置，再应用域名配置。
 
 ### VPS 自检循环
 
@@ -202,7 +248,7 @@ sudo install -m 0755 scripts/vps-watchdog.sh /usr/local/bin/video-download-watch
 
 sudo tee /etc/systemd/system/video-download-watchdog.service >/dev/null <<'EOF'
 [Unit]
-Description=VideoDownload bot watchdog
+Description=Video Download Bot System watchdog
 Wants=docker.service
 After=docker.service network-online.target
 
@@ -216,7 +262,7 @@ EOF
 
 sudo tee /etc/systemd/system/video-download-watchdog.timer >/dev/null <<'EOF'
 [Unit]
-Description=Run VideoDownload bot watchdog every minute
+Description=Run Video Download Bot System watchdog every minute
 
 [Timer]
 OnBootSec=2min
@@ -323,6 +369,7 @@ scripts/local-up.sh
 4. 复制请求里的 `Cookie` header，或者导出 cookie 文件。
 5. 用管理员账号打开 `/settings` -> Cookies -> `更新视频号元宝 Cookie`，也可以从 Telegram 命令菜单选择 `/set_yuanbao_cookie`。
 6. Cookie 较短时可以直接跟在命令后面；Cookie 很长或使用文件时，先发送 Cookie 消息或上传文件，再回复该消息发送 `/set_yuanbao_cookie`。
+7. 不记得步骤时，直接发送不带参数的 `/set_yuanbao_cookie`；Bot 会按当前界面语言返回完整获取与更新向导。
 
 元宝 Cookie 菜单只为管理员聊天注册，普通用户看不到这个专用命令，也无法调用更新功能。
 
@@ -352,6 +399,24 @@ scripts/local-up.sh
 - `/unblacklist_user 123456789`：解除永久拉黑；解除后用户需要重新申请或由管理员手动添加。
 - `/log 123456789`：管理员查看指定用户的下载记录。
 
+Bot 内的管理操作根据 `ADMIN` 中的 Telegram 数字 ID 鉴权，不要求再次输入密码。发送 `/users` 可处理日常操作；如果配置了 `DASHBOARD_PUBLIC_URL`，菜单底部还会出现“打开 Web 管理后台”按钮。
+
+Web 用户管理页位于 `/admin/users`，提供：
+
+- 待审批、已授权、固定授权、管理员和永久黑名单的数量总览；
+- 按状态筛选，并按姓名、Telegram 用户名或数字 ID 搜索；
+- 直接添加用户、批准或拒绝申请、撤销动态权限、永久拉黑与解除拉黑；
+- 查看单个用户最近 100 条下载历史；
+- 管理员不能删除或拉黑；`PRIVATE_ALLOWED_USERS` 固定用户不能在网页删除，但可由永久黑名单临时覆盖。
+
+Web 后台始终需要独立的 `DASHBOARD_USERNAME` 和 `DASHBOARD_PASSWORD`。Telegram 管理员身份不会自动登录网页，这是为了防止拿到管理员手机或转发链接的人直接进入后台。公网跳转必须先配置带 TLS 的反向代理，然后设置：
+
+```python
+DASHBOARD_PUBLIC_URL = "https://bot-admin.example.com"
+```
+
+不要填写 HTTP 地址、带用户名密码的 URL 或带查询参数的临时链接；这些地址不会被 Bot 接受。只通过 SSH tunnel 使用后台时请保持该值为空，此时 Bot 不显示 Web 跳转按钮。
+
 写在 `PRIVATE_ALLOWED_USERS` 中的是固定配置用户，必须从 `deploy/config.local.py` 移除并重启。移除用户只会撤销访问权限，不会自动删除该用户过去的日志和服务器目录。
 
 以下内容按 Telegram 用户 ID 隔离：私聊消息、回传媒体、临时下载文件、用户自己上传的 Cookie、格式/字幕偏好和 `/usage` 记录。平台公共解析 Cookie、元宝 Cookie、解析 sidecar 和公共元数据缓存仍由整个 Bot 服务共享。普通用户无法浏览其他人的文件或日志，管理员可以通过 `/log 用户ID` 查看指定用户记录。
@@ -368,7 +433,7 @@ https://t.me/YOUR_BOT_USERNAME?start=request_access
 
 用户打开 Bot 并点击 Start。由于尚未授权，Bot 会显示“申请使用权限”按钮。用户点击后只会创建一条待审批记录，并把申请人的姓名、用户名和 Telegram 数字 ID 发送给所有管理员。
 
-管理员在 Telegram 审批通知中点击“批准”“拒绝”或“永久拉黑”。批准后运行时白名单立即更新，申请人也会收到通知，无需重启。每个用户同时只能保留一条待审批申请，因此重复点击不会反复通知管理员；普通拒绝后 24 小时内不能再次提交。
+管理员可以在 Telegram 审批通知中点击“批准”“拒绝”或“永久拉黑”，也可以在 Web 用户管理页统一处理。批准后运行时白名单立即更新，申请人也会收到通知，无需重启。每个用户同时只能保留一条待审批申请，因此重复点击不会反复通知管理员；普通拒绝后 24 小时内不能再次提交。
 
 永久拉黑的优先级高于动态白名单和配置文件授权：它会立即撤销已有权限、删除待审批申请，并且该账号以后看不到申请按钮。只有管理员使用 `/unblacklist_user 用户ID` 才能恢复其申请资格。待审批记录和永久黑名单都会显示在 `/users` 菜单中。
 

@@ -30,6 +30,17 @@ ssh -L 5555:127.0.0.1:5555 root@YOUR_VPS
 Do not expose the dashboard port directly to the public internet unless you add
 your own reverse proxy authentication, TLS, and firewall rules.
 
+The dashboard has an independent username and password. Telegram administrator
+status is not a Web login mechanism. Authenticated browser sessions use
+HttpOnly, SameSite=Strict cookies; the Secure flag is enabled when
+`DASHBOARD_PUBLIC_URL` is an HTTPS URL. Cross-site state-changing requests are
+rejected and wildcard CORS is disabled.
+
+To show a Web administration button in the Bot, terminate TLS at a reverse
+proxy and set `DASHBOARD_PUBLIC_URL` to the clean HTTPS base URL. Never put a
+password, token, or other secret in that URL. Leave the setting empty for an
+SSH-tunnel-only deployment.
+
 ## Telegram Access Control
 
 The recommended personal-use config is:
@@ -68,4 +79,3 @@ Search for common secret markers:
 rg -n --hidden --glob '!.git/**' --glob '!vendor/**' \
   '(BOT_TOKEN|API_HASH|API_ID|Cookie:|sessionid|passport_|sid_guard)'
 ```
-

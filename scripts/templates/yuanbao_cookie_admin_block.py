@@ -1,4 +1,5 @@
-from HELPERS.bot_menu import YUANBAO_COOKIE_HELP
+from HELPERS.bot_menu import get_yuanbao_cookie_help
+from HELPERS.private_i18n import text
 
 
 def _extract_yuanbao_cookie_header(raw_text: str) -> tuple[str, int]:
@@ -71,6 +72,25 @@ def _write_yuanbao_cookie_to_env(cookie_header: str) -> None:
         logger.warning(f"Could not refresh WeChat Channels cookie in current process: {exc}")
 
 
+def _load_saved_cookie_file(chat_id: int) -> str:
+    """Load the cookie document saved by the upstream document handler."""
+    candidates = (
+        os.path.join("users", str(chat_id), os.path.basename(Config.COOKIE_FILE_PATH)),
+        os.path.join("users", str(chat_id), "cookie.txt"),
+    )
+    for path in candidates:
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+                raw_text = handle.read()
+            if "yuanbao.tencent.com" in raw_text or ".tencent.com" in raw_text:
+                return raw_text
+        except OSError as exc:
+            logger.warning(f"Could not read saved cookie file {path}: {exc}")
+    return ""
+
+
 @app.on_message(filters.command("set_yuanbao_cookie") & filters.private)
 @background_handler(label="set_yuanbao_cookie")
 def set_yuanbao_cookie_command(app, message):
@@ -85,7 +105,7 @@ def set_yuanbao_cookie_command(app, message):
     try:
         if reply and getattr(reply, "document", None):
             if reply.document.file_size > 1024 * 1024:
-                send_to_user(message, "Cookie 文件太大，请上传 1MB 以下的 cookies.txt。")
+                send_to_user(message, text("cookie_too_large", user_id=message.chat.id))
                 return
             secret_message_ids.append(reply.id)
             with tempfile.TemporaryDirectory() as tmpdir:
@@ -101,29 +121,27 @@ def set_yuanbao_cookie_command(app, message):
             command_text = message.text or message.caption or ""
             parts = command_text.split(maxsplit=1)
             raw_text = parts[1] if len(parts) > 1 else ""
+            if not raw_text:
+                raw_text = _load_saved_cookie_file(message.chat.id)
 
         if not raw_text.strip():
-            send_to_user(message, YUANBAO_COOKIE_HELP)
+            send_to_user(message, get_yuanbao_cookie_help(message.chat.id))
             return
 
         cookie_header, pair_count = _extract_yuanbao_cookie_header(raw_text)
         if not cookie_header:
-            send_to_user(
-                message,
-                "没有识别到元宝 Cookie。\n\n用法：回复 cookies.txt 发送 /set_yuanbao_cookie，"
-                "或发送 /set_yuanbao_cookie Cookie: name=value; name2=value2",
-            )
+            send_to_user(message, text("cookie_not_found", user_id=message.chat.id))
             return
 
         _write_yuanbao_cookie_to_env(cookie_header)
         send_to_user(
             message,
-            f"元宝 Cookie 已更新，识别到 {pair_count} 个 cookie。当前 bot 进程已刷新，重启后也会保留。",
+            text("cookie_updated", user_id=message.chat.id, count=pair_count),
         )
         logger.info(f"Yuanbao cookie updated by admin {message.chat.id}; pairs={pair_count}")
     except Exception as exc:
         logger.error(f"Failed to update Yuanbao cookie: {exc}")
-        send_to_user(message, "更新元宝 Cookie 失败，请检查 cookie 格式后重试。详细错误已写入服务端日志。")
+        send_to_user(message, text("cookie_update_failed", user_id=message.chat.id))
     finally:
         try:
             app.delete_messages(message.chat.id, secret_message_ids)

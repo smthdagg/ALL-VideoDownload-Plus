@@ -33,9 +33,96 @@ def install_private_users() -> None:
     templates = {
         ROOT / "scripts" / "templates" / "private_users.py": APP / "HELPERS" / "private_users.py",
         ROOT / "scripts" / "templates" / "private_users_cmd.py": APP / "COMMANDS" / "private_users_cmd.py",
+        ROOT / "scripts" / "templates" / "private_i18n.py": APP / "HELPERS" / "private_i18n.py",
+        ROOT / "scripts" / "templates" / "lang_cmd.py": APP / "COMMANDS" / "lang_cmd.py",
+        ROOT / "scripts" / "templates" / "messages_ZH.py": APP / "CONFIG" / "LANGUAGES" / "messages_ZH.py",
+        ROOT / "scripts" / "templates" / "private_users_web_service.py": APP / "services" / "private_users_web_service.py",
+        ROOT / "scripts" / "templates" / "dashboard_security.py": APP / "HELPERS" / "dashboard_security.py",
+        ROOT / "scripts" / "templates" / "private_users_admin.html": APP / "web" / "templates" / "private_users_admin.html",
+        ROOT / "scripts" / "templates" / "dashboard_login.html": APP / "web" / "templates" / "login.html",
+        ROOT / "scripts" / "templates" / "private-users.js": APP / "web" / "static" / "private-users.js",
+        ROOT / "scripts" / "templates" / "private-users.css": APP / "web" / "static" / "private-users.css",
     }
     for source, destination in templates.items():
         destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def patch_bot_i18n() -> None:
+    router_path = APP / "CONFIG" / "LANGUAGES" / "language_router.py"
+    router_text = router_path.read_text(encoding="utf-8")
+    start = router_text.index("    def get_available_languages(self) -> Dict[str, str]:")
+    end = router_text.index("    def _load_messages_with_ast", start)
+    router_block = '''    def get_available_languages(self) -> Dict[str, str]:
+        """Return languages that have complete user-interface coverage."""
+        return {
+            'zh': '中文',
+            'en': 'English',
+        }
+
+'''
+    router_path.write_text(router_text[:start] + router_block + router_text[end:], encoding="utf-8")
+
+    extractor_path = APP / "URL_PARSERS" / "url_extractor.py"
+    extractor_text = extractor_path.read_text(encoding="utf-8")
+    if "from HELPERS.private_i18n import ensure_user_language\n" not in extractor_text:
+        extractor_text = extractor_text.replace(
+            "from HELPERS.safe_messeger import fake_message\n",
+            "from HELPERS.safe_messeger import fake_message\n"
+            "from HELPERS.private_i18n import ensure_user_language\n",
+            1,
+        )
+    language_marker = '''def url_distractor(app, message):
+    user_id = message.chat.id
+'''
+    language_block = '''def url_distractor(app, message):
+    user_id = message.chat.id
+    ensure_user_language(
+        user_id,
+        getattr(getattr(message, "from_user", None), "language_code", None),
+    )
+'''
+    if language_block not in extractor_text:
+        extractor_text = extractor_text.replace(language_marker, language_block, 1)
+    extractor_path.write_text(extractor_text, encoding="utf-8")
+
+    limiter_path = APP / "HELPERS" / "limitter.py"
+    limiter_text = limiter_path.read_text(encoding="utf-8")
+    if "from HELPERS.private_i18n import ensure_user_language, text\n" not in limiter_text:
+        limiter_text = limiter_text.replace(
+            "from HELPERS.safe_messeger import safe_send_message\n",
+            "from HELPERS.safe_messeger import safe_send_message\n"
+            "from HELPERS.private_i18n import ensure_user_language, text\n",
+            1,
+        )
+    limiter_text = limiter_text.replace(
+        '                text="你的账号已被管理员永久禁止使用此 Bot。",\n',
+        '                text=text("private_blacklisted", user_id=message.chat.id),\n',
+    )
+    limiter_text = limiter_text.replace(
+        '''                text=(
+                    "这是私人 Bot，你当前还没有使用权限。\n\n"
+                    "点击下方按钮提交申请，管理员批准后即可使用。"
+                ),
+''',
+        '                text=text("private_denied", user_id=message.chat.id),\n',
+    )
+    limiter_text = limiter_text.replace(
+        "                reply_markup=build_access_request_markup(),\n",
+        "                reply_markup=build_access_request_markup(message.chat.id),\n",
+    )
+    check_marker = '''def check_user(message):
+    messages = safe_get_messages(message.chat.id)
+'''
+    check_block = '''def check_user(message):
+    ensure_user_language(
+        message.chat.id,
+        getattr(getattr(message, "from_user", None), "language_code", None),
+    )
+    messages = safe_get_messages(message.chat.id)
+'''
+    if check_block not in limiter_text:
+        limiter_text = limiter_text.replace(check_marker, check_block, 1)
+    limiter_path.write_text(limiter_text, encoding="utf-8")
 
 
 def patch_douyin_audio_download() -> None:
@@ -245,17 +332,457 @@ def deny_private_user(message):
 
 
 def patch_dashboard() -> None:
+    auth_path = APP / "services" / "auth_service.py"
+    auth_text = auth_path.read_text(encoding="utf-8")
+    if "import os\n" not in auth_text:
+        auth_text = auth_text.replace("import json\n", "import json\nimport os\n", 1)
+    auth_text = auth_text.replace(
+        'self._password_hash = self._hash_password(str(password).strip() if password else "admin123")',
+        'self._password_hash = self._hash_password(str(password) if password else "admin123")',
+    )
+    auth_text = auth_text.replace(
+        "return self._hash_password(password) == self._password_hash",
+        "return secrets.compare_digest(self._hash_password(password), self._password_hash)",
+    )
+    auth_text = auth_text.replace(
+        '            password = str(password).strip() if password else ""\n',
+        '            password = str(password) if password else ""\n',
+    )
+    auth_text = auth_text.replace(
+        "            # Strip whitespace from inputs\n",
+        "            # Normalize the username but preserve the password exactly.\n",
+    )
+    auth_text = auth_text.replace(
+        '        password_clean = str(password).strip() if password else "admin123"\n',
+        '        password_clean = str(password) if password else "admin123"\n',
+    )
+    auth_text = auth_text.replace(
+        '        # Load username/password from config (strip whitespace)\n',
+        '        # Normalize only the username; passwords are exact strings.\n',
+    )
+    auth_text = auth_text.replace(
+        '        logger.info(f"[auth] Initialized with username=\'{self._username}\' (length={len(self._username)})")\n',
+        '        logger.info("[auth] Dashboard authentication initialized")\n',
+    )
+    verbose_login_log = '''                    logger.warning(
+                        f"[auth] Login failed for IP {ip}: "
+                        f"username_match={username_match} "
+                        f"(got='{username}' len={len(username)}, expected='{self._username}' len={len(self._username)}), "
+                        f"password_match={password_match} "
+                        f"(password_len={len(password)})"
+                    )
+'''
+    auth_text = auth_text.replace(
+        verbose_login_log,
+        '                    logger.warning(f"[auth] Login failed for IP {ip}")\n',
+    )
+    session_write = '''            with open(self._sessions_file, "w", encoding="utf-8") as fh:
+                json.dump(self._sessions, fh)
+'''
+    secure_session_write = session_write + "            os.chmod(self._sessions_file, 0o600)\n"
+    if secure_session_write not in auth_text:
+        auth_text = auth_text.replace(session_write, secure_session_write, 1)
+    auth_path.write_text(auth_text, encoding="utf-8")
+
     path = APP / "web" / "dashboard_app.py"
     replace_once(
         path,
+        "from fastapi.responses import HTMLResponse, RedirectResponse\n",
+        "from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse\n",
+    )
+    text = path.read_text(encoding="utf-8")
+    cors_import = "from fastapi.middleware.cors import CORSMiddleware\n"
+    if cors_import in text:
+        text = text.replace(cors_import, "", 1)
+        path.write_text(text, encoding="utf-8")
+    cors_block = '''# CORS for API requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+'''
+    text = path.read_text(encoding="utf-8")
+    if cors_block in text:
+        path.write_text(text.replace(cors_block, "", 1), encoding="utf-8")
+    old_imports = (
+        "from services.auth_service import get_auth_service\n"
+        "from services.private_users_web_service import PrivateUsersWebService\n"
+        "from HELPERS.dashboard_security import is_allowed_browser_origin, use_secure_cookie\n"
+        "from HELPERS.private_users import get_private_user_store\n"
+    )
+    new_imports = (
+        "from services.auth_service import get_auth_service\n"
+        "from services.private_users_web_service import PrivateUsersWebService\n"
+        "from HELPERS.dashboard_security import (\n"
+        "    is_allowed_browser_origin,\n"
+        "    is_public_dashboard_path,\n"
+        "    use_secure_cookie,\n"
+        ")\n"
+        "from HELPERS.private_users import get_private_user_store\n"
+    )
+    text = path.read_text(encoding="utf-8")
+    if new_imports not in text:
+        if old_imports in text:
+            text = text.replace(old_imports, new_imports, 1)
+        else:
+            text = text.replace(
+                "from services.auth_service import get_auth_service\n",
+                new_imports,
+                1,
+            )
+        path.write_text(text, encoding="utf-8")
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
         '        public_paths = ["/login", "/api/login", "/api/reset-lockdown", "/static", "/health"]\n',
         '        public_paths = ["/login", "/api/login", "/static", "/health"]\n',
+        1,
     )
+    path.write_text(text, encoding="utf-8")
+    replace_once(
+        path,
+        '''        public_paths = ["/login", "/api/login", "/static", "/health"]
+        if any(request.url.path.startswith(path) for path in public_paths):
+            return await call_next(request)
+''',
+        '''        if is_public_dashboard_path(request.url.path):
+            return await call_next(request)
+''',
+    )
+    replace_once(
+        path,
+        '''            if request.url.path.startswith("/api/"):
+                raise HTTPException(status_code=401, detail="Unauthorized")
+''',
+        '''            if request.url.path.startswith("/api/"):
+                return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+''',
+    )
+    replace_once(
+        path,
+        '''        # Read token from cookie
+        token = request.cookies.get("auth_token")
+''',
+        '''        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            public_url = getattr(Config, "DASHBOARD_PUBLIC_URL", "")
+            if not is_allowed_browser_origin(
+                request.headers.get("origin"), public_url, str(request.base_url)
+            ):
+                return JSONResponse({"detail": "Cross-site request rejected"}, status_code=403)
+
+        # Read token from cookie
+        token = request.cookies.get("auth_token")
+''',
+    )
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        "                secure=False,\n                samesite=\"lax\",\n",
+        "                secure=use_secure_cookie(getattr(Config, \"DASHBOARD_PUBLIC_URL\", \"\")),\n                samesite=\"strict\",\n",
+    )
+    text = text.replace(
+        "            secure=False,  # In production, set True when using HTTPS\n            samesite=\"lax\",\n",
+        "            secure=use_secure_cookie(getattr(Config, \"DASHBOARD_PUBLIC_URL\", \"\")),\n            samesite=\"strict\",\n",
+    )
+    path.write_text(text, encoding="utf-8")
     replace_once(
         path,
         '    return templates.TemplateResponse("login.html", {"request": request})\n',
         '    return templates.TemplateResponse(request, "login.html")\n',
     )
+    route_marker = '''@app.get("/api/active-users")
+'''
+    route_block = '''def _private_users_service():
+    return PrivateUsersWebService(
+        get_private_user_store(),
+        getattr(Config, "ADMIN", []),
+        getattr(Config, "PRIVATE_ALLOWED_USERS", []),
+    )
+
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def private_users_page(request: Request):
+    return templates.TemplateResponse(request, "private_users_admin.html")
+
+
+@app.get("/api/private-users")
+async def api_private_users():
+    return _private_users_service().snapshot()
+
+
+class PrivateUserActionRequest(BaseModel):
+    user_id: int = Field(..., gt=0)
+    reason: str | None = Field(default=None, max_length=200)
+
+
+PRIVATE_USER_ACTION_MESSAGES = {
+    "added": "用户已授权，立即生效。",
+    "already_allowed": "该用户已经拥有权限。",
+    "blacklisted": "用户已永久拉黑。",
+    "already_blacklisted": "该用户已经在永久黑名单中。",
+    "unblacklisted": "永久拉黑已解除。",
+    "not_blacklisted": "该用户不在永久黑名单中。",
+    "removed": "用户权限已撤销。",
+    "not_dynamic": "该用户不在动态授权名单中。",
+    "approved": "申请已批准，权限立即生效。",
+    "rejected": "申请已拒绝，24 小时内不能重复申请。",
+    "not_pending": "这项申请已被处理或不存在。",
+    "protected": "管理员或固定配置用户不能在这里移除或拉黑。",
+}
+
+
+@app.post("/api/private-users/{action}")
+async def api_private_user_action(action: str, payload: PrivateUserActionRequest):
+    service = _private_users_service()
+    handlers = {
+        "add": lambda: service.add(payload.user_id),
+        "remove": lambda: service.remove(payload.user_id),
+        "approve": lambda: service.approve(payload.user_id),
+        "reject": lambda: service.reject(payload.user_id),
+        "blacklist": lambda: service.blacklist(payload.user_id, payload.reason),
+        "unblacklist": lambda: service.unblacklist(payload.user_id),
+    }
+    handler = handlers.get(action)
+    if handler is None:
+        raise HTTPException(status_code=404, detail="Unknown user action")
+    try:
+        result = handler()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if result in {"protected", "blacklisted"} and action == "add":
+        raise HTTPException(status_code=409, detail=PRIVATE_USER_ACTION_MESSAGES[result])
+    return {"status": "ok", "result": result, "message": PRIVATE_USER_ACTION_MESSAGES[result]}
+
+
+@app.get("/api/active-users")
+'''
+    replace_once(path, route_marker, route_block)
+
+    dashboard_template = APP / "web" / "templates" / "dashboard.html"
+    dashboard_html = dashboard_template.read_text(encoding="utf-8")
+    if 'href="/admin/users"' not in dashboard_html:
+        dashboard_html = dashboard_html.replace(
+            '            <button class="logout-button" onclick="logout()" data-i18n="buttons.logout">Logout</button>\n',
+            '            <a class="logout-button" href="/admin/users" data-i18n="buttons.user_access">User access</a>\n'
+            '            <button class="logout-button" onclick="logout()" data-i18n="buttons.logout">Logout</button>\n',
+            1,
+        )
+    old_language_switch = '''            <div class="lang-switch" role="group" aria-label="Language switch">
+                <button type="button" data-lang-btn="en" class="active">EN</button>
+                <span>|</span>
+                <button type="button" data-lang-btn="ru">RU</button>
+                <span>|</span>
+                <button type="button" data-lang-btn="hi">HI</button>
+                <span>|</span>
+                <button type="button" data-lang-btn="ar">AR</button>
+            </div>
+'''
+    bilingual_language_switch = '''            <div class="lang-switch" role="group" aria-label="Language switch">
+                <button type="button" data-lang-btn="zh">中文</button>
+                <span>|</span>
+                <button type="button" data-lang-btn="en">EN</button>
+            </div>
+'''
+    if old_language_switch in dashboard_html:
+        dashboard_html = dashboard_html.replace(
+            old_language_switch, bilingual_language_switch, 1
+        )
+    dashboard_html = dashboard_html.replace(
+        '<a class="logout-button" href="/admin/users">User access</a>',
+        '<a class="logout-button" href="/admin/users" data-i18n="buttons.user_access">User access</a>',
+    )
+    dashboard_html = dashboard_html.replace(
+        'role="group" aria-label="Language switch"',
+        'role="group" aria-label="Language switch" data-i18n-aria="aria.language"',
+    )
+    dashboard_html = dashboard_html.replace(
+        'data-modal-close aria-label="Close"',
+        'data-modal-close aria-label="Close" data-i18n-aria="aria.close"',
+    )
+    dashboard_html = dashboard_html.replace(
+        'placeholder="Search..."',
+        'placeholder="Search..." data-i18n-placeholder="misc.search"',
+    )
+    dashboard_html = dashboard_html.replace(
+        'placeholder="Search by User ID, Name, or Username..."',
+        'placeholder="Search by User ID, Name, or Username..." data-i18n-placeholder="history.search_placeholder"',
+    )
+    dashboard_html = dashboard_html.replace(
+        '<p>Edit domain lists from CONFIG/domains.py</p>',
+        '<p data-i18n="lists.domains_hint">Edit domain lists from CONFIG/domains.py</p>',
+    )
+    for minutes in (5, 15, 30, 60):
+        dashboard_html = dashboard_html.replace(
+            f'<option value="{minutes}">{minutes} min</option>',
+            f'<option value="{minutes}" data-i18n="time.min_{minutes}">{minutes} min</option>',
+        )
+        dashboard_html = dashboard_html.replace(
+            f'<option value="{minutes}" selected>{minutes} min</option>',
+            f'<option value="{minutes}" selected data-i18n="time.min_{minutes}">{minutes} min</option>',
+        )
+    for attribute in (
+        'data-i18n-aria="aria.language"',
+        'data-i18n-aria="aria.close"',
+        'data-i18n-placeholder="misc.search"',
+        'data-i18n-placeholder="history.search_placeholder"',
+    ):
+        duplicate = f"{attribute} {attribute}"
+        while duplicate in dashboard_html:
+            dashboard_html = dashboard_html.replace(duplicate, attribute)
+    dashboard_template.write_text(dashboard_html, encoding="utf-8")
+
+    dashboard_script = APP / "web" / "static" / "dashboard.js"
+    dashboard_js = dashboard_script.read_text(encoding="utf-8")
+    zh_template = (
+        ROOT / "scripts" / "templates" / "dashboard_zh_translations.js"
+    ).read_text(encoding="utf-8")
+    zh_start = "    // PRIVATE_ZH_TRANSLATIONS_START"
+    zh_end = "    // PRIVATE_ZH_TRANSLATIONS_END"
+    if zh_start in dashboard_js:
+        start = dashboard_js.index(zh_start)
+        end = dashboard_js.index(zh_end, start) + len(zh_end)
+        dashboard_js = dashboard_js[:start] + zh_template.rstrip() + dashboard_js[end:]
+    else:
+        dashboard_js = dashboard_js.replace(
+            "    translations.hi = {",
+            zh_template.rstrip() + "\n\n    translations.hi = {",
+            1,
+        )
+    while dashboard_js.count('            "buttons.user_access": "User access",\n') > 1:
+        dashboard_js = dashboard_js.replace(
+            '            "buttons.user_access": "User access",\n', "", 1
+        )
+    if '            "buttons.user_access": "User access",\n' not in dashboard_js:
+        dashboard_js = dashboard_js.replace(
+            '            "buttons.logout": "Logout",\n',
+            '            "buttons.logout": "Logout",\n'
+            '            "buttons.user_access": "User access",\n',
+            1,
+        )
+    if '            "aria.language": "Language switch",\n' not in dashboard_js:
+        dashboard_js = dashboard_js.replace(
+            '            "buttons.user_access": "User access",\n',
+            '            "buttons.user_access": "User access",\n'
+            '            "aria.language": "Language switch",\n'
+            '            "aria.close": "Close",\n',
+            1,
+        )
+    english_dashboard_messages = '''            "misc.search": "Search...",
+            "history.search_placeholder": "Search by User ID, name, or username...",
+            "lists.domains_hint": "Edit domain lists from CONFIG/domains.py.",
+            "time.min_5": "5 min",
+            "time.min_15": "15 min",
+            "time.min_30": "30 min",
+            "time.min_60": "60 min",
+            "confirm.rotate_ip": "Rotate IP address? This will restart WireGuard.",
+            "confirm.restart": "Restart the tg-ytdlp-bot service?",
+            "confirm.update_engines": "Update download engines? This may take several minutes.",
+            "confirm.cleanup": "Delete all user files except system files? This cannot be undone.",
+            "confirm.update_lists": "Update lists? This may take several minutes.",
+            "result.ip_ok": "IP rotated successfully",
+            "result.ip_failed": "Failed to rotate IP",
+            "result.restart_ok": "Service restarted successfully",
+            "result.restart_failed": "Failed to restart service",
+            "result.engines_ok": "Download engines updated successfully",
+            "result.engines_failed": "Failed to update download engines",
+            "result.cleanup_ok": "User files cleaned up successfully",
+            "result.cleanup_failed": "Failed to clean up user files",
+            "result.lists_ok": "Lists updated successfully",
+            "result.lists_failed": "Failed to update lists",
+            "errors.operation": "Operation failed. Check the server log.",
+            "errors.number": "Enter a number.",
+            "errors.password_empty": "The password cannot be empty. Enter a new password.",
+            "errors.layout_missing": "The page template is missing.",
+            "result.password_updated": "Password updated. Log in again with the new password.",
+            "result.username_updated": "Username updated. Log in again with the new username.",
+            "result.saved": "Saved!",
+            "lists.no_domains": "No domain lists.",
+            "lists.add_item": "Add a new item...",
+            "lists.add": "Add",
+            "lists.save": "Save {name}",
+            "lists.saved": "{name} saved. Restart the Bot to apply changes.",
+            "lists.save_failed": "Failed to save {name}.",
+'''
+    if '            "misc.search": "Search...",\n' not in dashboard_js:
+        dashboard_js = dashboard_js.replace(
+            '            "aria.close": "Close",\n',
+            '            "aria.close": "Close",\n' + english_dashboard_messages,
+            1,
+        )
+    dashboard_js = dashboard_js.replace(
+        '    let currentLang = localStorage.getItem("dashboardLang") || "en";',
+        '    let currentLang = localStorage.getItem("adminLanguage") || '
+        'localStorage.getItem("dashboardLang") || '
+        '(navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");',
+        1,
+    )
+    duplicate_language_storage = (
+        '        localStorage.setItem("adminLanguage", lang);\n'
+        '        localStorage.setItem("adminLanguage", lang);\n'
+    )
+    dashboard_js = dashboard_js.replace(
+        duplicate_language_storage,
+        '        localStorage.setItem("adminLanguage", lang);\n',
+    )
+    if '        localStorage.setItem("adminLanguage", lang);\n' not in dashboard_js:
+        dashboard_js = dashboard_js.replace(
+            '        localStorage.setItem("dashboardLang", lang);\n',
+            '        localStorage.setItem("dashboardLang", lang);\n'
+            '        localStorage.setItem("adminLanguage", lang);\n',
+            1,
+        )
+    aria_translation_block = '''        document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+            el.setAttribute("aria-label", t(el.dataset.i18nAria));
+        });
+'''
+    if aria_translation_block not in dashboard_js:
+        dashboard_js = dashboard_js.replace(
+            '        emptyStateText = t("misc.empty");\n',
+            aria_translation_block + '        emptyStateText = t("misc.empty");\n',
+            1,
+        )
+    placeholder_translation_block = '''        document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+            el.placeholder = t(el.dataset.i18nPlaceholder);
+        });
+'''
+    if placeholder_translation_block not in dashboard_js:
+        dashboard_js = dashboard_js.replace(
+            aria_translation_block,
+            aria_translation_block + placeholder_translation_block,
+            1,
+        )
+    dashboard_replacements = {
+        'confirm("Rotate IP address? This will restart WireGuard.")': 'confirm(t("confirm.rotate_ip"))',
+        'data.message || (data.status === "ok" ? "IP rotated successfully" : "Failed to rotate IP")': 'data.status === "ok" ? t("result.ip_ok") : t("result.ip_failed")',
+        'confirm("Restart tg-ytdlp-bot service?")': 'confirm(t("confirm.restart"))',
+        'data.message || (data.status === "ok" ? "Service restarted successfully" : "Failed to restart service")': 'data.status === "ok" ? t("result.restart_ok") : t("result.restart_failed")',
+        'confirm("Update engines? This may take several minutes.")': 'confirm(t("confirm.update_engines"))',
+        'data.message || (data.status === "ok" ? "Engines updated successfully" : "Failed to update engines")': 'data.status === "ok" ? t("result.engines_ok") : t("result.engines_failed")',
+        'confirm("Delete all user files (except system files)? This cannot be undone.")': 'confirm(t("confirm.cleanup"))',
+        'data.message || (data.status === "ok" ? "Files cleaned up successfully" : "Failed to cleanup files")': 'data.status === "ok" ? t("result.cleanup_ok") : t("result.cleanup_failed")',
+        'confirm("Update lists? This may take several minutes.")': 'confirm(t("confirm.update_lists"))',
+        'data.message || (data.status === "ok" ? "Lists updated successfully" : "Failed to update lists")': 'data.status === "ok" ? t("result.lists_ok") : t("result.lists_failed")',
+        'alert("Error: " + e.message);': 'alert(t("errors.operation"));',
+        '`<div class="empty-state">Layout template missing</div>`': '`<div class="empty-state">${t("errors.layout_missing")}</div>`',
+        'throw new Error("Value must be a number");': 'throw new Error(t("errors.number"));',
+        'alert("Password cannot be empty. Please enter a new password.");': 'alert(t("errors.password_empty"));',
+        'alert("Password updated successfully. Please log in again with the new password.");': 'alert(t("result.password_updated"));',
+        'alert("Username updated successfully. Please log in again with the new username.");': 'alert(t("result.username_updated"));',
+        'saveButton.textContent = "Saved!";': 'saveButton.textContent = t("result.saved");',
+        '`<div class="empty-state">No domain lists</div>`': '`<div class="empty-state">${t("lists.no_domains")}</div>`',
+        'placeholder="Search..."': 'placeholder="${t("misc.search")}"',
+        'placeholder="Add new item..."': 'placeholder="${t("lists.add_item")}"',
+        '<button onclick="addDomainItem(\'${listName}\')">Add</button>': '<button onclick="addDomainItem(\'${listName}\')">${t("lists.add")}</button>',
+        '<button class="save-list-btn" onclick="saveDomainList(\'${listName}\')">Save ${listName}</button>': '<button class="save-list-btn" onclick="saveDomainList(\'${listName}\')">${replacePlaceholders(t("lists.save"), { name: listName })}</button>',
+        'alert(`${listName} saved! Restart bot to apply changes.`);': 'alert(replacePlaceholders(t("lists.saved"), { name: listName }));',
+        'alert(`Failed to save ${listName}`);': 'alert(replacePlaceholders(t("lists.save_failed"), { name: listName }));',
+    }
+    for old, new in dashboard_replacements.items():
+        dashboard_js = dashboard_js.replace(old, new)
+    dashboard_script.write_text(dashboard_js, encoding="utf-8")
     replace_once(
         path,
         """    return templates.TemplateResponse(
@@ -737,27 +1264,55 @@ def patch_douyin_always_ask_error() -> None:
 def patch_yuanbao_cookie_command() -> None:
     path = APP / "COMMANDS" / "admin_cmd.py"
     text = path.read_text(encoding="utf-8")
-    if "def set_yuanbao_cookie_command(app, message):" in text:
-        return
     if "import tempfile\n" not in text:
         text = text.replace("import threading\n", "import threading\nimport tempfile\n", 1)
+    text = text.replace(
+        "from HELPERS.bot_menu import YUANBAO_COOKIE_HELP\n", ""
+    ).replace(
+        "from HELPERS.bot_menu import get_yuanbao_cookie_help\n", ""
+    ).replace(
+        "from HELPERS.private_i18n import text\n", ""
+    )
+    imports = (
+        "from HELPERS.bot_menu import get_yuanbao_cookie_help\n"
+        "from HELPERS.private_i18n import text\n"
+    )
+    text = text.replace(
+        "from HELPERS.decorators import background_handler\n",
+        "from HELPERS.decorators import background_handler\n" + imports,
+        1,
+    )
     block = (ROOT / "scripts" / "templates" / "yuanbao_cookie_admin_block.py").read_text(encoding="utf-8")
+    block = block.split("\n\n", 1)[1]
     marker = '@app.on_message(filters.command("reload_cache") & filters.private)\n'
     if marker not in text:
         raise RuntimeError(f"Expected reload_cache marker not found in {path}")
-    path.write_text(text.replace(marker, block + "\n" + marker, 1), encoding="utf-8")
+    block_start = "def _extract_yuanbao_cookie_header(raw_text: str) -> tuple[str, int]:\n"
+    if block_start in text:
+        start = text.index(block_start)
+        end = text.index(marker, start)
+        text = text[:start] + block.rstrip() + "\n\n" + text[end:]
+    else:
+        text = text.replace(marker, block.rstrip() + "\n\n" + marker, 1)
+    path.write_text(text, encoding="utf-8")
 
 
 def patch_yuanbao_cookie_menus() -> None:
     settings_path = APP / "COMMANDS" / "settings_cmd.py"
     settings_text = settings_path.read_text(encoding="utf-8")
-    if "from HELPERS.bot_menu import YUANBAO_COOKIE_HELP\n" not in settings_text:
+    if "from HELPERS.bot_menu import get_yuanbao_cookie_help\n" not in settings_text:
         settings_text = settings_text.replace(
             "from HELPERS.decorators import background_handler\n",
             "from HELPERS.decorators import background_handler\n"
-            "from HELPERS.bot_menu import YUANBAO_COOKIE_HELP\n",
+            "from HELPERS.bot_menu import get_yuanbao_cookie_help\n"
+            "from HELPERS.private_i18n import text\n",
             1,
         )
+    settings_text = settings_text.replace(
+        "from HELPERS.bot_menu import YUANBAO_COOKIE_HELP\n",
+        "from HELPERS.bot_menu import get_yuanbao_cookie_help\n"
+        "from HELPERS.private_i18n import text\n",
+    )
 
     if 'callback_data="settings__cmd__yuanbao_cookie"' not in settings_text:
         old_cookie_menu = '''    if data == "cookies":
@@ -787,7 +1342,7 @@ def patch_yuanbao_cookie_menus() -> None:
         if int(user_id) in Config.ADMIN:
             cookie_buttons.append([
                 InlineKeyboardButton(
-                    "更新视频号元宝 Cookie",
+                    text("yuanbao_menu", user_id=user_id),
                     callback_data="settings__cmd__yuanbao_cookie",
                 )
             ])
@@ -812,11 +1367,11 @@ def patch_yuanbao_cookie_menus() -> None:
 
     if data == "yuanbao_cookie":
         if int(user_id) not in Config.ADMIN:
-            callback_query.answer("只有管理员可以更新元宝 Cookie。", show_alert=True)
+            callback_query.answer(text("cookie_admin_only", user_id=user_id), show_alert=True)
             return
         safe_send_message(
             user_id,
-            YUANBAO_COOKIE_HELP,
+            get_yuanbao_cookie_help(user_id),
             reply_parameters=ReplyParameters(message_id=callback_query.message.id),
         )
         callback_query.answer(safe_get_messages(user_id).SETTINGS_HINT_SENT_MSG)
@@ -827,6 +1382,18 @@ def patch_yuanbao_cookie_menus() -> None:
         if callback_marker not in settings_text:
             raise RuntimeError(f"Expected settings callback marker not found in {settings_path}")
         settings_text = settings_text.replace(callback_marker, callback_block, 1)
+    settings_text = settings_text.replace(
+        '                    "更新视频号元宝 Cookie",\n',
+        '                    text("yuanbao_menu", user_id=user_id),\n',
+    )
+    settings_text = settings_text.replace(
+        '            callback_query.answer("只有管理员可以更新元宝 Cookie。", show_alert=True)\n',
+        '            callback_query.answer(text("cookie_admin_only", user_id=user_id), show_alert=True)\n',
+    )
+    settings_text = settings_text.replace(
+        "            YUANBAO_COOKIE_HELP,\n",
+        "            get_yuanbao_cookie_help(user_id),\n",
+    )
     settings_path.write_text(settings_text, encoding="utf-8")
 
     magic_path = APP / "magic.py"
@@ -1125,6 +1692,7 @@ def main() -> None:
     install_bot_menu()
     install_private_users()
     patch_limiter()
+    patch_bot_i18n()
     patch_dashboard()
     patch_compose()
     patch_dockerfile()
