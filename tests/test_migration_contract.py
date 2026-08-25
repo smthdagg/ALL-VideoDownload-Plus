@@ -25,6 +25,8 @@ class MigrationContractTest(unittest.TestCase):
         script = (ROOT / "scripts/prepare-vps-migration.sh").read_text(encoding="utf-8")
         self.assertIn("docker compose stop", script)
         self.assertIn("trap restore_app", script)
+        self.assertIn("systemctl stop video-download-watchdog.timer", script)
+        self.assertIn("systemctl start video-download-watchdog.timer", script)
         self.assertIn("--include-private", script)
         self.assertIn("chmod 600", script)
 

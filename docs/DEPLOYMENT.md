@@ -120,14 +120,16 @@ sudo scripts/prepare-vps-migration.sh
 
 The script:
 
-1. records whether the Bot is running;
-2. stops only the `app` container so the Telegram session is consistent;
+1. records whether the Bot and watchdog timer are running;
+2. pauses the watchdog and stops only the `app` container so the Telegram
+   session is consistent;
 3. packages private config, cookies, Telegram session, dynamic authorization,
    user preferences, and runtime database;
 4. excludes downloaded media, transient logs, Caddy TLS private state, caches,
    SSH keys, and prior archives;
 5. writes a SHA-256 checksum and sets both files to mode 600;
-6. restores the source Bot automatically, including after a packaging error.
+6. restores the source Bot and watchdog automatically, including after a
+   packaging error.
 
 Archives are written under `/root/video-download-migrations` by default. Never
 upload them to GitHub or send them through an untrusted channel.

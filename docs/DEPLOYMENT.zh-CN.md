@@ -103,12 +103,12 @@ sudo scripts/prepare-vps-migration.sh
 
 这个脚本会：
 
-1. 记录 Bot 是否正在运行；
-2. 只停止 `app` 容器，使 Telegram session 保持一致；
+1. 记录 Bot 与 watchdog 定时器是否正在运行；
+2. 暂停 watchdog，并只停止 `app` 容器，使 Telegram Session 保持一致；
 3. 保存私有配置、Cookie、Session、动态授权、用户偏好和运行数据库；
 4. 排除下载媒体、临时日志、Caddy TLS 私钥、缓存、SSH 密钥和旧压缩包；
 5. 生成 SHA-256 校验和，并把文件权限设置为 600；
-6. 无论成功或出错，都自动恢复原 Bot。
+6. 无论成功或出错，都自动恢复原 Bot 与 watchdog。
 
 默认输出目录为 `/root/video-download-migrations`。私有迁移包绝不能上传 GitHub。
 
