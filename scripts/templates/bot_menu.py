@@ -9,6 +9,8 @@ ADMIN_COMMANDS = (
     ("add_user", "添加可使用 Bot 的用户"),
     ("remove_user", "移除可使用 Bot 的用户"),
     ("list_users", "查看已授权用户"),
+    ("blacklist_user", "永久拉黑一个用户"),
+    ("unblacklist_user", "解除用户永久拉黑"),
 )
 YUANBAO_COOKIE_COMMAND = ADMIN_COMMANDS[0][0]
 YUANBAO_COOKIE_HELP = (

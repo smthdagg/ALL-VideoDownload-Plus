@@ -46,16 +46,18 @@ class PrivateUserStore:
 
     def _read(self):
         if not self.path.exists():
-            return {"users": {}, "requests": {}}
+            return {"users": {}, "requests": {}, "blacklist": {}}
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            return {"users": {}, "requests": {}}
+            return {"users": {}, "requests": {}, "blacklist": {}}
         users = payload.get("users") if isinstance(payload, dict) else None
         requests = payload.get("requests") if isinstance(payload, dict) else None
+        blacklist = payload.get("blacklist") if isinstance(payload, dict) else None
         return {
             "users": users if isinstance(users, dict) else {},
             "requests": requests if isinstance(requests, dict) else {},
+            "blacklist": blacklist if isinstance(blacklist, dict) else {},
         }
 
     def _write(self, payload):
@@ -92,6 +94,8 @@ class PrivateUserStore:
         with self._lock:
             payload = self._read()
             key = str(user_id)
+            if key in payload["blacklist"]:
+                return False
             if key in payload["users"]:
                 if payload["requests"].pop(key, None) is not None:
                     self._write(payload)
@@ -119,6 +123,8 @@ class PrivateUserStore:
         with self._lock:
             payload = self._read()
             key = str(user_id)
+            if key in payload["blacklist"]:
+                return "blacklisted"
             if key in payload["users"]:
                 return "allowed"
 
@@ -165,6 +171,8 @@ class PrivateUserStore:
         with self._lock:
             payload = self._read()
             key = str(user_id)
+            if key in payload["blacklist"]:
+                return False
             request = payload["requests"].get(key)
             if not isinstance(request, dict) or request.get("status") != "pending":
                 return False
@@ -174,6 +182,57 @@ class PrivateUserStore:
                 "source": "approved_request",
             }
             payload["requests"].pop(key, None)
+            self._write(payload)
+            return True
+
+    def list_blacklisted(self):
+        with self._lock:
+            blacklist = self._read()["blacklist"]
+            entries = {}
+            for raw_id, metadata in blacklist.items():
+                try:
+                    user_id = normalize_user_id(raw_id)
+                except ValueError:
+                    continue
+                entries[user_id] = metadata if isinstance(metadata, dict) else {}
+            return entries
+
+    def list_blacklisted_ids(self):
+        return set(self.list_blacklisted())
+
+    def is_blacklisted(self, user_id):
+        try:
+            user_id = normalize_user_id(user_id)
+        except ValueError:
+            return False
+        return user_id in self.list_blacklisted_ids()
+
+    def blacklist(self, user_id, reviewed_by, reason=None):
+        user_id = normalize_user_id(user_id)
+        reviewed_by = normalize_user_id(reviewed_by)
+        with self._lock:
+            payload = self._read()
+            key = str(user_id)
+            if key in payload["blacklist"]:
+                return False
+            metadata = {
+                "blocked_at": int(time.time()),
+                "blocked_by": reviewed_by,
+            }
+            if reason:
+                metadata["reason"] = str(reason).replace("\n", " ").strip()[:200]
+            payload["blacklist"][key] = metadata
+            payload["users"].pop(key, None)
+            payload["requests"].pop(key, None)
+            self._write(payload)
+            return True
+
+    def unblacklist(self, user_id):
+        user_id = normalize_user_id(user_id)
+        with self._lock:
+            payload = self._read()
+            if payload["blacklist"].pop(str(user_id), None) is None:
+                return False
             self._write(payload)
             return True
 

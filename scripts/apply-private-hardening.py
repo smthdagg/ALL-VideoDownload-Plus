@@ -129,22 +129,27 @@ def patch_limiter() -> None:
         )
         path.write_text(text, encoding="utf-8")
 
-    helper = '''
+    helper = r'''
 def is_private_mode_enabled():
     return bool(getattr(Config, "PRIVATE_MODE", False))
 
 
 def get_private_allowed_users():
     try:
-        dynamic_users = get_private_user_store().list_ids()
+        store = get_private_user_store()
+        dynamic_users = store.list_ids()
+        blacklisted_users = store.list_blacklisted_ids()
     except Exception as exc:
         logger.error(f"Could not read dynamic private users: {exc}")
         dynamic_users = set()
-    return collect_allowed_user_ids(
+        blacklisted_users = set()
+    admin_users = collect_allowed_user_ids(getattr(Config, "ADMIN", []), [], [])
+    allowed_users = collect_allowed_user_ids(
         getattr(Config, "ADMIN", []),
         getattr(Config, "PRIVATE_ALLOWED_USERS", []),
         dynamic_users,
     )
+    return (allowed_users - blacklisted_users) | admin_users
 
 
 def is_private_user_allowed(user_id):
@@ -158,15 +163,22 @@ def is_private_user_allowed(user_id):
 
 def deny_private_user(message):
     try:
-        safe_send_message(
-            chat_id=message.chat.id,
-            text=(
-                "这是私人 Bot，你当前还没有使用权限。\n\n"
-                "点击下方按钮提交申请，管理员批准后即可使用。"
-            ),
-            message=message,
-            reply_markup=build_access_request_markup(),
-        )
+        if get_private_user_store().is_blacklisted(message.chat.id):
+            safe_send_message(
+                chat_id=message.chat.id,
+                text="你的账号已被管理员永久禁止使用此 Bot。",
+                message=message,
+            )
+        else:
+            safe_send_message(
+                chat_id=message.chat.id,
+                text=(
+                    "这是私人 Bot，你当前还没有使用权限。\n\n"
+                    "点击下方按钮提交申请，管理员批准后即可使用。"
+                ),
+                message=message,
+                reply_markup=build_access_request_markup(),
+            )
     except Exception:
         pass
     return False
@@ -179,28 +191,23 @@ def deny_private_user(message):
             "def create_language_keyboard():\n",
             helper + "def create_language_keyboard():\n",
         )
-    elif "dynamic_users = get_private_user_store().list_ids()" not in text:
-        start = text.index("def get_private_allowed_users():")
-        end = text.index("def is_private_user_allowed", start)
-        new_function = helper[
-            helper.index("def get_private_allowed_users():"):
-            helper.index("def is_private_user_allowed")
-        ]
-        path.write_text(text[:start] + new_function + text[end:], encoding="utf-8")
 
     text = path.read_text(encoding="utf-8")
-    old_denial = '''            text="This is a private bot. Access is restricted.",
-            message=message,
-'''
-    new_denial = '''            text=(
-                "这是私人 Bot，你当前还没有使用权限。\\n\\n"
-                "点击下方按钮提交申请，管理员批准后即可使用。"
-            ),
-            message=message,
-            reply_markup=build_access_request_markup(),
-'''
-    if old_denial in text:
-        path.write_text(text.replace(old_denial, new_denial, 1), encoding="utf-8")
+    start = text.index("def get_private_allowed_users():")
+    end = text.index("def is_private_user_allowed", start)
+    desired_get_allowed = helper[
+        helper.index("def get_private_allowed_users():"):
+        helper.index("def is_private_user_allowed")
+    ]
+    if text[start:end] != desired_get_allowed:
+        path.write_text(text[:start] + desired_get_allowed + text[end:], encoding="utf-8")
+
+    text = path.read_text(encoding="utf-8")
+    start = text.index("def deny_private_user(message):")
+    end = text.index("def create_language_keyboard", start)
+    desired_denial = helper[helper.index("def deny_private_user(message):"):]
+    if text[start:end] != desired_denial:
+        path.write_text(text[:start] + desired_denial + text[end:], encoding="utf-8")
     replace_once(
         path,
         """def is_user_in_channel(app, message):
@@ -867,6 +874,8 @@ def patch_private_user_commands() -> None:
         "add_user - Add a Telegram user ID (admin only)",
         "remove_user - Remove a Telegram user ID (admin only)",
         "list_users - List authorized users (admin only)",
+        "blacklist_user - Permanently blacklist a Telegram user ID (admin only)",
+        "unblacklist_user - Remove a Telegram user ID from the permanent blacklist (admin only)",
     )
     for line in lines:
         if line not in commands_text.splitlines():
