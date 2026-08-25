@@ -43,6 +43,7 @@ English documentation: [README.md](README.md).
   - 可选使用 Yuanbao cookie 解析只返回预览信息的链接。
 - TikTok 兼容模式：
   - 优先选择 `H.264 + AAC + MP4`，避免 Telegram 播放无声或兼容异常。
+  - TikTok JavaScript 挑战出现临时响应错误时，Bot 会进行有限次数的自动重试。
 - 管理员可在 Telegram 里用 `/set_yuanbao_cookie` 更新 Yuanbao cookie。
 
 ## 相对上游修改了什么
@@ -57,6 +58,7 @@ English documentation: [README.md](README.md).
 - **视频号解析**：增加 `weixin.qq.com/sph/...` 解析；公开页面只有预览信息时，可用 Yuanbao cookie 作为 fallback。
 - **Telegram 内更新 cookie**：管理员可用 `/set_yuanbao_cookie`，直接在 Telegram 里回复 cookie 文件或 Cookie header 来更新元宝 cookie。
 - **TikTok Telegram 兼容格式**：优先选 `H.264 + AAC + MP4`，避免某些 TikTok 视频上传成功但 Telegram 播放无声或兼容异常。
+- **受支持的运行基线**：Docker 使用 Python 3.12、稳定版 `yt-dlp 2026.08.19` 和 `bgutil-ytdlp-pot-provider 1.3.2`；已取消全局预发布依赖安装，并移除未使用的 MoviePy 1.x。
 - **X/Twitter 多视频帖子**：一个 X/Twitter 帖子里如果有多个视频，补丁会探测全部 media entries，并按多视频任务下载，不再只取第一个。
 - **公开安全打包**：`scripts/package-for-vps.sh` 默认排除真实配置、cookies、Telegram session、日志、下载文件和私有压缩包；只有显式 `--include-private` 才会生成个人迁移包。
 - **VPS 自检循环**：`scripts/vps-watchdog.sh` 从系统层检查 Docker、app 容器、NTP 时间同步和 Pyrogram session；发现时间漂移或崩溃迹象时只重启 bot 服务。

@@ -30,6 +30,31 @@ def install_bot_menu() -> None:
     destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def install_tiktok_retry() -> None:
+    source = ROOT / "scripts" / "templates" / "tiktok_retry.py"
+    destination = APP / "HELPERS" / "tiktok_retry.py"
+    destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+    magic_path = APP / "magic.py"
+    magic_text = magic_path.read_text(encoding="utf-8")
+    retry_setup = (
+        "from HELPERS.tiktok_retry import apply_tiktok_retry_patch\n"
+        "apply_tiktok_retry_patch()\n"
+    )
+    if retry_setup not in magic_text:
+        marker = "import yt_dlp\n"
+        if marker not in magic_text:
+            raise RuntimeError(f"yt-dlp import not found in {magic_path}")
+        magic_text = magic_text.replace(marker, marker + retry_setup, 1)
+        magic_path.write_text(magic_text, encoding="utf-8")
+
+
+def install_dockerignore() -> None:
+    source = ROOT / "scripts" / "templates" / "dockerignore"
+    destination = APP / ".dockerignore"
+    destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+
 def install_private_users() -> None:
     templates = {
         ROOT / "scripts" / "templates" / "private_users.py": APP / "HELPERS" / "private_users.py",
@@ -932,6 +957,14 @@ def patch_admin_operation_paths() -> None:
     lists_path.write_text(lists_text, encoding="utf-8")
 def patch_compose() -> None:
     path = APP / "docker-compose.yml"
+    text = path.read_text(encoding="utf-8")
+    text = text.replace('version: "3.9"\n\n', "", 1)
+    text = text.replace(
+        "brainicism/bgutil-ytdlp-pot-provider:latest",
+        "brainicism/bgutil-ytdlp-pot-provider:1.3.2",
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
     replace_once(
         path,
         '      - "5555:5555"  # Dashboard (change port via Config.DASHBOARD_PORT in CONFIG/config.py)\n',
@@ -979,10 +1012,32 @@ def patch_compose() -> None:
     image: caddy:2-alpine
 """,
     )
+    replace_once(
+        path,
+        """  configuration-webserver:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    cap_add:
+""",
+        """  configuration-webserver:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "80:80"
+      - "8443:443"
+      - "8443:443/udp"
+    cap_add:
+""",
+    )
 
 
 def patch_dockerfile() -> None:
     path = APP / "Dockerfile"
+    text = path.read_text(encoding="utf-8")
+    text = text.replace("FROM python:3.10-slim", "FROM python:3.12-slim", 1)
+    path.write_text(text, encoding="utf-8")
     replace_once(
         path,
         """    git \\
@@ -994,6 +1049,36 @@ def patch_dockerfile() -> None:
     ffmpeg \\
 """,
     )
+
+
+def patch_runtime_dependencies() -> None:
+    requirements_path = APP / "requirements.txt"
+    text = requirements_path.read_text(encoding="utf-8")
+    text = text.replace("moviepy==1.0.3\n", "", 1)
+    text = text.replace("--pre\n", "", 1)
+    text = text.replace(
+        "yt-dlp[default,curl-cffi]\n",
+        "yt-dlp[default,curl-cffi]==2026.8.19\n",
+        1,
+    )
+    text = text.replace(
+        "bgutil-ytdlp-pot-provider\n",
+        "bgutil-ytdlp-pot-provider==1.3.2\n",
+        1,
+    )
+    requirements_path.write_text(text, encoding="utf-8")
+
+    ffmpeg_path = APP / "DOWN_AND_UP" / "ffmpeg.py"
+    text = ffmpeg_path.read_text(encoding="utf-8")
+    text = text.replace("from moviepy.editor import VideoFileClip\n", "", 1)
+    text = text.replace("from moviepy.video.fx.all import resize\n", "", 1)
+    ffmpeg_path.write_text(text, encoding="utf-8")
+
+    magic_path = APP / "magic.py"
+    text = magic_path.read_text(encoding="utf-8")
+    text = text.replace("# from moviepy.editor import VideoFileClip\n", "", 1)
+    text = text.replace("from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip\n", "", 1)
+    magic_path.write_text(text, encoding="utf-8")
 
 
 def patch_firebase_local_mode() -> None:
@@ -1810,6 +1895,8 @@ def patch_x_multi_video_format_probe() -> None:
 def main() -> None:
     install_platform_runtime()
     install_bot_menu()
+    install_tiktok_retry()
+    install_dockerignore()
     install_private_users()
     patch_limiter()
     patch_bot_i18n()
@@ -1818,6 +1905,7 @@ def main() -> None:
     patch_admin_operation_paths()
     patch_compose()
     patch_dockerfile()
+    patch_runtime_dependencies()
     patch_firebase_local_mode()
     patch_douyin_normalization()
     patch_douyin_api_sidecar()
