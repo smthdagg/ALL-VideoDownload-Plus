@@ -37,7 +37,7 @@ No downloader can guarantee permanent access to every platform. Platform changes
 - WeChat Channels support:
   - handles public `weixin.qq.com/sph/...` links;
   - optional Yuanbao cookie fallback for links that only expose preview metadata.
-- TikTok Telegram compatibility mode: prefers H.264 + AAC MP4 to avoid silent or incompatible uploads.
+- TikTok Telegram compatibility mode: prefers H.264 + AAC MP4 to avoid silent or incompatible uploads, and automatically retries transient JavaScript challenge responses from TikTok.
 - Admin command for updating Yuanbao cookie from Telegram: `/set_yuanbao_cookie`.
 
 ## Custom Enhancements Over Upstream
@@ -52,6 +52,7 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **WeChat Channels support**: adds a resolver for `weixin.qq.com/sph/...` links, including a Yuanbao cookie fallback when the public page only exposes preview metadata.
 - **Telegram admin cookie update**: `/set_yuanbao_cookie` lets an admin update Yuanbao cookies directly in Telegram by replying with a cookie file or raw Cookie header.
 - **TikTok Telegram-safe format preference**: prefers H.264 + AAC MP4 formats to avoid videos that upload successfully but play silently or poorly inside Telegram.
+- **Supported runtime baseline**: Docker uses Python 3.12, stable `yt-dlp 2026.08.19`, and `bgutil-ytdlp-pot-provider 1.3.2`. Global prerelease installation and the unused MoviePy 1.x dependency have been removed.
 - **X/Twitter multi-video posts**: when a single X/Twitter status contains multiple video entries, the patch probes all entries and downloads them as a multi-item post instead of only taking the first video.
 - **Public-safe packaging**: `scripts/package-for-vps.sh` excludes generated runtime config, cookies, Telegram session files, logs, downloads, and private archives by default; `--include-private` is explicit for personal migration only.
 - **VPS watchdog loop**: `scripts/vps-watchdog.sh` checks Docker, the app container, NTP time sync, and Pyrogram session startup, then restarts only the bot service when it detects time-drift or crash symptoms.
