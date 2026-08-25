@@ -104,6 +104,41 @@ class PrivateUserStoreTest(unittest.TestCase):
             self.assertEqual(store.list_ids(), {789})
             self.assertEqual(store.list_pending_requests(), {})
 
+    def test_permanent_blacklist_revokes_access_and_blocks_requests(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = module.PrivateUserStore(Path(tmpdir) / "private_users.json")
+            store.add(321, added_by=999)
+
+            self.assertTrue(store.blacklist(321, reviewed_by=999, reason="abuse"))
+
+            self.assertNotIn(321, store.list_ids())
+            self.assertTrue(store.is_blacklisted(321))
+            self.assertEqual(store.submit_request(321, {}), "blacklisted")
+            self.assertEqual(store.list_pending_requests(), {})
+
+    def test_unblacklist_allows_a_new_request(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = module.PrivateUserStore(Path(tmpdir) / "private_users.json")
+            store.blacklist(654, reviewed_by=999)
+
+            self.assertTrue(store.unblacklist(654))
+
+            self.assertFalse(store.is_blacklisted(654))
+            self.assertEqual(store.submit_request(654, {}), "created")
+
+    def test_blacklisting_a_pending_request_removes_it(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = module.PrivateUserStore(Path(tmpdir) / "private_users.json")
+            store.submit_request(987, {"first_name": "Abusive"})
+
+            store.blacklist(987, reviewed_by=999)
+
+            self.assertEqual(store.list_pending_requests(), {})
+            self.assertFalse(store.approve(987, reviewed_by=999))
+
     def test_access_request_button_uses_the_expected_callback(self):
         module = load_module()
 

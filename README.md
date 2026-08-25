@@ -333,6 +333,8 @@ Administrators can maintain the runtime allowlist directly in Telegram without r
 - `/add_user 123456789` grants access immediately. An administrator can also reply to a user's original or forwarded message with `/add_user` when Telegram exposes the sender ID.
 - `/remove_user 123456789` removes a dynamically granted user.
 - `/list_users` shows administrators, configuration-file users, and dynamically granted users.
+- `/blacklist_user 123456789` permanently blocks a user, revokes existing access, and removes pending requests.
+- `/unblacklist_user 123456789` removes the permanent block; the user must apply again or be added manually.
 - `/log 123456789` shows that user's download history to an administrator.
 
 Users listed in `PRIVATE_ALLOWED_USERS` remain configuration-managed and must be removed from `deploy/config.local.py` followed by a restart. Removing a user revokes access but does not erase historical logs or the user's server-side directory.
@@ -351,7 +353,9 @@ https://t.me/YOUR_BOT_USERNAME?start=request_access
 
 The user opens the Bot and presses Start. Because the account is not yet authorized, the Bot displays an `Apply for access` button. Pressing it creates one pending request and sends every administrator an approval message containing the applicant's name, username, and numeric Telegram ID.
 
-An administrator presses `Approve` or `Reject` in Telegram. Approval updates the runtime allowlist immediately and notifies the applicant; no restart is required. Duplicate pending requests do not generate repeated administrator notifications. A rejected account must wait 24 hours before submitting another request. Pending requests also appear in `/users`.
+An administrator presses `Approve`, `Reject`, or `Permanently blacklist` in Telegram. Approval updates the runtime allowlist immediately and notifies the applicant; no restart is required. Only one pending request is allowed per user, so repeated clicks do not generate repeated administrator notifications. A rejected account must wait 24 hours before submitting another request.
+
+Permanent blacklisting overrides both dynamic and configuration-file authorization, immediately revokes existing access, removes pending requests, and hides the application button from that account. Only an administrator can restore eligibility with `/unblacklist_user USER_ID`. Pending requests and permanently blacklisted IDs also appear in `/users`.
 
 ## Validation
 

@@ -35,11 +35,14 @@ def _configured_user_ids():
 
 
 def _all_allowed_user_ids():
-    return collect_allowed_user_ids(
+    store = get_private_user_store()
+    admin_ids = collect_allowed_user_ids(Config.ADMIN, [], [])
+    allowed = collect_allowed_user_ids(
         Config.ADMIN,
         getattr(Config, "PRIVATE_ALLOWED_USERS", []),
-        get_private_user_store().list_ids(),
+        store.list_ids(),
     )
+    return (allowed - store.list_blacklisted_ids()) | admin_ids
 
 
 def _profile(user):
@@ -59,10 +62,13 @@ def _request_label(user_id, metadata):
 
 
 def _approval_keyboard(user_id):
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("批准", callback_data=f"private_users|approve|{user_id}"),
-        InlineKeyboardButton("拒绝", callback_data=f"private_users|reject|{user_id}"),
-    ]])
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("批准", callback_data=f"private_users|approve|{user_id}"),
+            InlineKeyboardButton("拒绝", callback_data=f"private_users|reject|{user_id}"),
+        ],
+        [InlineKeyboardButton("永久拉黑", callback_data=f"private_users|blacklist|{user_id}")],
+    ])
 
 
 def _notify_admins(app, user_id, metadata):
@@ -108,6 +114,9 @@ def _menu_keyboard():
             InlineKeyboardButton(f"批准 {user_id}", callback_data=f"private_users|approve|{user_id}"),
             InlineKeyboardButton("拒绝", callback_data=f"private_users|reject|{user_id}"),
         ])
+        rows.append([
+            InlineKeyboardButton("永久拉黑", callback_data=f"private_users|blacklist|{user_id}")
+        ])
     rows.append([InlineKeyboardButton("关闭", callback_data="private_users|close")])
     return InlineKeyboardMarkup(rows)
 
@@ -131,12 +140,17 @@ def _list_text():
         except (TypeError, ValueError, OSError):
             date_text = "未知"
         lines.append(f"- {user_id}（添加于 {date_text}）")
+    blacklisted = store.list_blacklisted()
+    lines.extend(["", f"永久黑名单：{len(blacklisted)} 人"])
+    lines.extend(f"- {user_id}" for user_id in sorted(blacklisted))
     lines.extend([
         "",
         f"待审批申请：{len(store.list_pending_requests())} 人",
         "",
         "添加：/add_user 用户ID，或回复/转发对方消息发送 /add_user",
         "移除：/remove_user 用户ID",
+        "拉黑：/blacklist_user 用户ID",
+        "解除：/unblacklist_user 用户ID",
         "日志：/log 用户ID",
     ])
     return "\n".join(lines)
@@ -189,7 +203,15 @@ def add_private_user(app, message):
     if target_id in {int(value) for value in Config.ADMIN} or target_id in _configured_user_ids():
         safe_send_message(message.chat.id, f"用户 {target_id} 已经拥有使用权限。", message=message)
         return
-    added = get_private_user_store().add(target_id, added_by=message.chat.id)
+    store = get_private_user_store()
+    if store.is_blacklisted(target_id):
+        safe_send_message(
+            message.chat.id,
+            f"用户 {target_id} 在永久黑名单中，请先使用 /unblacklist_user {target_id}。",
+            message=message,
+        )
+        return
+    added = store.add(target_id, added_by=message.chat.id)
     result = "已添加" if added else "已经在动态白名单中"
     safe_send_message(message.chat.id, f"用户 {target_id} {result}，无需重启。", message=message)
 
@@ -221,6 +243,45 @@ def remove_private_user(app, message):
     safe_send_message(message.chat.id, f"用户 {target_id} {result}。", message=message)
 
 
+@app.on_message(filters.command("blacklist_user") & filters.private)
+@background_handler(label="blacklist_private_user")
+def blacklist_private_user(app, message):
+    if not _is_admin(message.chat.id):
+        _deny(message)
+        return
+    try:
+        target_id = _target_user_id(message)
+    except ValueError:
+        safe_send_message(message.chat.id, "用法：/blacklist_user 用户ID。", message=message)
+        return
+    if target_id in {int(value) for value in Config.ADMIN}:
+        safe_send_message(message.chat.id, "不能拉黑管理员。", message=message)
+        return
+    blocked = get_private_user_store().blacklist(
+        target_id,
+        reviewed_by=message.chat.id,
+        reason="manual",
+    )
+    result = "已永久拉黑，原有权限和申请已撤销" if blocked else "已经在永久黑名单中"
+    safe_send_message(message.chat.id, f"用户 {target_id} {result}。", message=message)
+
+
+@app.on_message(filters.command("unblacklist_user") & filters.private)
+@background_handler(label="unblacklist_private_user")
+def unblacklist_private_user(app, message):
+    if not _is_admin(message.chat.id):
+        _deny(message)
+        return
+    try:
+        target_id = _target_user_id(message)
+    except ValueError:
+        safe_send_message(message.chat.id, "用法：/unblacklist_user 用户ID。", message=message)
+        return
+    removed = get_private_user_store().unblacklist(target_id)
+    result = "已解除永久拉黑，可以重新申请" if removed else "不在永久黑名单中"
+    safe_send_message(message.chat.id, f"用户 {target_id} {result}。", message=message)
+
+
 @app.on_callback_query(filters.regex(r"^private_users\|"))
 def private_users_callback(app, callback_query):
     user_id = callback_query.from_user.id
@@ -240,6 +301,8 @@ def private_users_callback(app, callback_query):
             callback_query.answer("申请正在等待管理员审批，请勿重复提交。", show_alert=True)
         elif state == "rejected":
             callback_query.answer("申请刚被拒绝，请稍后再申请或联系管理员。", show_alert=True)
+        elif state == "blacklisted":
+            callback_query.answer("你的账号已被永久禁止申请。", show_alert=True)
         else:
             callback_query.answer("你已经拥有使用权限。", show_alert=True)
         return
@@ -248,27 +311,34 @@ def private_users_callback(app, callback_query):
         callback_query.answer("只有管理员可以管理用户。", show_alert=True)
         return
 
-    if action in {"approve", "reject"}:
+    if action in {"approve", "reject", "blacklist"}:
         try:
             target_id = normalize_user_id(parts[2])
         except (IndexError, ValueError):
             callback_query.answer("申请数据无效。", show_alert=True)
             return
         store = get_private_user_store()
-        handled = (
-            store.approve(target_id, reviewed_by=user_id)
-            if action == "approve"
-            else store.reject(target_id, reviewed_by=user_id)
-        )
+        if action == "approve":
+            handled = store.approve(target_id, reviewed_by=user_id)
+        elif action == "reject":
+            handled = store.reject(target_id, reviewed_by=user_id)
+        else:
+            if target_id in {int(value) for value in Config.ADMIN}:
+                callback_query.answer("不能拉黑管理员。", show_alert=True)
+                return
+            handled = store.blacklist(target_id, reviewed_by=user_id, reason="application_abuse")
         if not handled:
             callback_query.answer("该申请已由其他管理员处理。", show_alert=True)
             return
         if action == "approve":
             user_text = "你的 Bot 使用申请已通过，现在可以直接发送视频链接。"
             admin_text = f"已批准用户 {target_id}，权限立即生效。"
-        else:
+        elif action == "reject":
             user_text = "你的 Bot 使用申请未通过。如有疑问，请联系管理员。"
             admin_text = f"已拒绝用户 {target_id} 的申请。"
+        else:
+            user_text = "你的账号已被管理员永久禁止使用和申请此 Bot。"
+            admin_text = f"已永久拉黑用户 {target_id}，原有权限和申请均已撤销。"
         safe_send_message(target_id, user_text)
         try:
             callback_query.edit_message_text(admin_text)
