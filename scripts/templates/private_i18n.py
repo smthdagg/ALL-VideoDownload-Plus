@@ -9,10 +9,10 @@ MESSAGES = {
         "language_button": "中文 / English",
         "language_title": "请选择界面语言：",
         "language_changed": "界面语言已切换为中文。",
-        "private_denied": "这是私人 Bot，你当前还没有使用权限。\n\n点击下方按钮提交申请，管理员批准后即可使用。",
+        "private_denied": "这是私人 Bot，你当前还没有使用权限。\n\n点击“申请使用权限”，管理员批准后即可使用。申请不会上传你的 Cookie 或下载内容；每个用户按 Telegram 数字 ID 隔离保存自己的文件、设置和 Cookie。",
         "private_blacklisted": "你的账号已被管理员永久禁止使用此 Bot。",
         "apply_access": "申请使用权限",
-        "request_created": "申请已提交，请等待管理员审批。",
+        "request_created": "申请已提交，请等待管理员审批。重复点击不会增加申请；如果被拒绝，24 小时内不能再次申请。",
         "request_pending": "申请正在等待管理员审批，请勿重复提交。",
         "request_rejected": "申请刚被拒绝，请稍后再申请或联系管理员。",
         "request_blacklisted": "你的账号已被永久禁止申请。",
@@ -28,7 +28,13 @@ MESSAGES = {
         "reject": "拒绝",
         "permanent_blacklist": "永久拉黑",
         "request_admin_notice": "收到新的 Bot 使用申请\n\n{label}\n\n批准后用户立即获得权限，无需重启。",
-        "request_user_approved": "你的 Bot 使用申请已通过，现在可以直接发送视频链接。",
+        "request_user_approved": (
+            "你的 Bot 使用申请已通过，现在可以直接发送视频链接。\n\n"
+            "首次使用登录可见内容时：打开 /settings → Cookie，选择对应网站；"
+            "也可以使用 /cookies_from_browser 按向导导入自己的 cookies.txt。"
+            "Cookie 只用于你的 Telegram 数字 ID，不会与其他用户混用。\n\n"
+            "视频、临时文件、设置、Cookie 和使用记录按用户 ID 分开保存；管理员只能查看运行日志和必要的下载记录。"
+        ),
         "request_user_rejected": "你的 Bot 使用申请未通过。如有疑问，请联系管理员。",
         "request_user_blocked": "你的账号已被管理员永久禁止使用和申请此 Bot。",
         "request_already_handled": "该申请已由其他管理员处理。",
@@ -67,15 +73,21 @@ MESSAGES = {
         "cookie_updated": "元宝 Cookie 已更新，识别到 {count} 个 Cookie；当前进程已刷新，重启后仍会保留。",
         "cookie_update_failed": "更新元宝 Cookie 失败，请检查 Cookie 格式后重试；详细错误已写入服务端日志。",
         "cookie_admin_only": "只有管理员可以更新元宝 Cookie。",
+        "disk_warning": (
+            "存储空间提醒：当前磁盘已使用 {used_percent}%（预警线 {warning_percent}%），"
+            "剩余 {free_space}；达到 {high_percent}% 时系统会自动清理过期媒体。\n\n"
+            "请发送 /clean 清理你自己的临时下载文件。系统只删除过期媒体和残片，"
+            "不会删除你的设置、Cookie 或权限记录。"
+        ),
     },
     "en": {
         "language_button": "English / 中文",
         "language_title": "Choose your interface language:",
         "language_changed": "Interface language changed to English.",
-        "private_denied": "This is a private Bot and your account does not have access yet.\n\nUse the button below to apply. You can start after an administrator approves the request.",
+        "private_denied": "This is a private Bot and your account does not have access yet.\n\nTap “Apply for access”. Your application does not upload any Cookie or downloaded content. Each user has separate files, settings, and Cookies keyed by the Telegram numeric ID.",
         "private_blacklisted": "Your account has been permanently blocked from using this Bot.",
         "apply_access": "Apply for access",
-        "request_created": "Your request was submitted. Please wait for administrator approval.",
+        "request_created": "Your request was submitted. Repeated taps do not create more requests; after a rejection, you must wait 24 hours before applying again.",
         "request_pending": "Your request is already awaiting approval. Please do not submit it repeatedly.",
         "request_rejected": "Your request was recently rejected. Try again later or contact the administrator.",
         "request_blacklisted": "Your account has been permanently blocked from applying.",
@@ -91,7 +103,14 @@ MESSAGES = {
         "reject": "Reject",
         "permanent_blacklist": "Permanently blacklist",
         "request_admin_notice": "New Bot access request\n\n{label}\n\nApproval grants access immediately; no restart is required.",
-        "request_user_approved": "Your Bot access request was approved. You can now send a video link.",
+        "request_user_approved": (
+            "Your Bot access request was approved. You can now send a video link.\n\n"
+            "For login-required media, open /settings -> Cookie and choose the website,"
+            " or use /cookies_from_browser to import your own cookies.txt. Cookies are stored"
+            " for your Telegram numeric ID and are not shared with other users.\n\n"
+            "Videos, temporary files, settings, Cookies, and usage records are separated by user ID;"
+            " administrators can only view operational logs and necessary download history."
+        ),
         "request_user_rejected": "Your Bot access request was not approved. Contact the administrator if needed.",
         "request_user_blocked": "Your account has been permanently blocked from using or applying to this Bot.",
         "request_already_handled": "Another administrator already handled this request.",
@@ -130,6 +149,11 @@ MESSAGES = {
         "cookie_updated": "Yuanbao Cookie updated. {count} Cookie entries were recognized; the current process was refreshed and the value will survive restarts.",
         "cookie_update_failed": "Could not update the Yuanbao Cookie. Check its format and try again; details were written to the server log.",
         "cookie_admin_only": "Only administrators can update the Yuanbao Cookie.",
+        "disk_warning": (
+            "Storage warning: the disk is {used_percent}% full (warning line {warning_percent}%),"
+            " with {free_space} remaining. At {high_percent}%, the system will automatically remove stale media.\n\n"
+            "Send /clean to remove your temporary download files. Settings, Cookies, and access records are preserved."
+        ),
     },
 }
 

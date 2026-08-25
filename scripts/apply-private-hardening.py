@@ -61,6 +61,7 @@ def install_private_users() -> None:
         ROOT / "scripts" / "templates" / "private_users.py": APP / "HELPERS" / "private_users.py",
         ROOT / "scripts" / "templates" / "private_users_cmd.py": APP / "COMMANDS" / "private_users_cmd.py",
         ROOT / "scripts" / "templates" / "private_i18n.py": APP / "HELPERS" / "private_i18n.py",
+        ROOT / "scripts" / "templates" / "storage_notice.py": APP / "HELPERS" / "storage_notice.py",
         ROOT / "scripts" / "templates" / "lang_cmd.py": APP / "COMMANDS" / "lang_cmd.py",
         ROOT / "scripts" / "templates" / "messages_ZH.py": APP / "CONFIG" / "LANGUAGES" / "messages_ZH.py",
         ROOT / "scripts" / "templates" / "private_users_web_service.py": APP / "services" / "private_users_web_service.py",
@@ -138,7 +139,8 @@ def patch_bot_i18n() -> None:
         limiter_text = limiter_text.replace(
             "from HELPERS.safe_messeger import safe_send_message\n",
             "from HELPERS.safe_messeger import safe_send_message\n"
-            "from HELPERS.private_i18n import ensure_user_language, text\n",
+            "from HELPERS.private_i18n import ensure_user_language, text\n"
+            "from HELPERS.storage_notice import maybe_send_disk_warning\n",
             1,
         )
     limiter_text = limiter_text.replace(
@@ -169,6 +171,11 @@ def patch_bot_i18n() -> None:
 '''
     if check_block not in limiter_text:
         limiter_text = limiter_text.replace(check_marker, check_block, 1)
+    limiter_text = limiter_text.replace(
+        "    maybe_send_disk_warning(message)\n    messages = safe_get_messages(message.chat.id)\n",
+        "    messages = safe_get_messages(message.chat.id)\n",
+        1,
+    )
     limiter_path.write_text(limiter_text, encoding="utf-8")
 
 
@@ -263,6 +270,15 @@ def patch_limiter() -> None:
         )
         path.write_text(text, encoding="utf-8")
 
+    if "from HELPERS.storage_notice import maybe_send_disk_warning\n" not in text:
+        text = text.replace(
+            "from HELPERS.private_i18n import ensure_user_language, text\n",
+            "from HELPERS.private_i18n import ensure_user_language, text\n"
+            "from HELPERS.storage_notice import maybe_send_disk_warning\n",
+            1,
+        )
+        path.write_text(text, encoding="utf-8")
+
     helper = r'''
 def is_private_mode_enabled():
     return bool(getattr(Config, "PRIVATE_MODE", False))
@@ -300,18 +316,15 @@ def deny_private_user(message):
         if get_private_user_store().is_blacklisted(message.chat.id):
             safe_send_message(
                 chat_id=message.chat.id,
-                text="你的账号已被管理员永久禁止使用此 Bot。",
+                text=text("private_blacklisted", user_id=message.chat.id),
                 message=message,
             )
         else:
             safe_send_message(
                 chat_id=message.chat.id,
-                text=(
-                    "这是私人 Bot，你当前还没有使用权限。\n\n"
-                    "点击下方按钮提交申请，管理员批准后即可使用。"
-                ),
+                text=text("private_denied", user_id=message.chat.id),
                 message=message,
-                reply_markup=build_access_request_markup(),
+                reply_markup=build_access_request_markup(message.chat.id),
             )
     except Exception:
         pass
@@ -327,6 +340,14 @@ def deny_private_user(message):
         )
 
     text = path.read_text(encoding="utf-8")
+    storage_marker = '    # Create The User Folder Inside The "Users" Directory\n'
+    if "    maybe_send_disk_warning(message)\n" not in text and storage_marker in text:
+        text = text.replace(
+            storage_marker,
+            "    maybe_send_disk_warning(message)\n\n" + storage_marker,
+            1,
+        )
+        path.write_text(text, encoding="utf-8")
     start = text.index("def get_private_allowed_users():")
     end = text.index("def is_private_user_allowed", start)
     desired_get_allowed = helper[
@@ -342,6 +363,14 @@ def deny_private_user(message):
     desired_denial = helper[helper.index("def deny_private_user(message):"):]
     if text[start:end] != desired_denial:
         path.write_text(text[:start] + desired_denial + text[end:], encoding="utf-8")
+    text = path.read_text(encoding="utf-8")
+    if "    maybe_send_disk_warning(message)\n" not in text:
+        marker = '    # Create The User Folder Inside The "Users" Directory\n'
+        if marker in text:
+            path.write_text(
+                text.replace(marker, "    maybe_send_disk_warning(message)\n\n" + marker, 1),
+                encoding="utf-8",
+            )
     private_channel_block = """def is_user_in_channel(app, message):
     messages = safe_get_messages(message.chat.id)
     try:

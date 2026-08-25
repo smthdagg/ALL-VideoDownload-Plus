@@ -53,6 +53,11 @@ ALL VideoDownload Plus is a private-first Telegram downloader focused on WeChat 
 
 This release includes the complete bilingual Bot Help and command menu, private-user approval and blacklist controls, per-user cookies and preferences, X multi-video handling, WeChat Channels Yuanbao fallback, TikTok retry and audio/video compatibility, Douyin resolver integration, an authenticated Web administration panel, automatic cleanup, watchdog recovery, and reproducible VPS migration packages.
 
+New users receive an access-request button with language selection. After approval,
+the Bot explains `/settings` -> Cookie and `/cookies_from_browser` for importing
+their own cookies.txt. Files, settings, Cookies, and usage records are keyed by
+the Telegram numeric ID and are not shared between users.
+
 ## Release Scope
 
 - **Bot experience:** English and Chinese Help, localized Telegram command menus, `/lang`, `/settings`, quality presets, cookie tools, and platform-specific guides.
@@ -115,6 +120,7 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **Public-safe packaging**: `scripts/package-for-vps.sh` excludes generated runtime config, cookies, Telegram session files, logs, downloads, and private archives by default; `--include-private` is explicit for personal migration only.
 - **VPS watchdog loop**: `scripts/vps-watchdog.sh` checks Docker, the app container, NTP time sync, and Pyrogram session startup, then restarts only the bot service when it detects time-drift or crash symptoms.
 - **Automatic storage protection**: `scripts/runtime-cleanup.sh` removes stale media and partial files while preserving user settings, cookies, logs, and caches. It runs every 30 minutes on the VPS, and removes the oldest eligible media first when disk usage exceeds 80%.
+- **User-facing storage warnings**: the Bot warns private users at 75% disk usage, at most once every six hours per user, and points them to `/clean`. The cleanup service removes media after the configured retention period and can enforce an optional `MAX_MEDIA_STORAGE_GB` cap.
 - **Patch-driven upstream workflow**: local changes are encoded in `scripts/apply-private-hardening.py` and `scripts/templates/`, so the upstream bot can be re-cloned and patched reproducibly.
 - **Focused tests**: resolver tests cover custom Douyin mobile and WeChat Channels behavior.
 

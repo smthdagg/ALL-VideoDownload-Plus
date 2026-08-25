@@ -16,6 +16,8 @@ timers, and migration tooling.
 - Tracked custom code lives in `scripts/apply-private-hardening.py` and
   `scripts/templates/`.
 - `vendor/tg-ytdlp-bot/` is generated and ignored by the root repository.
+- `scripts/templates/storage_notice.py` owns the per-user disk-pressure warning;
+  `scripts/runtime-cleanup.sh` owns retention and host-side storage cleanup.
 - Do not make a fix only inside `vendor/`; encode it in the patch script or a
   tracked template, regenerate the vendor tree, and add a contract test.
 - Private production values belong only in ignored runtime files. Never copy
