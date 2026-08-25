@@ -1,3 +1,5 @@
+from HELPERS.bot_menu import YUANBAO_COOKIE_HELP
+
 
 def _extract_yuanbao_cookie_header(raw_text: str) -> tuple[str, int]:
     """Return a Cookie header value from Netscape cookies.txt or pasted Cookie text."""
@@ -99,6 +101,10 @@ def set_yuanbao_cookie_command(app, message):
             command_text = message.text or message.caption or ""
             parts = command_text.split(maxsplit=1)
             raw_text = parts[1] if len(parts) > 1 else ""
+
+        if not raw_text.strip():
+            send_to_user(message, YUANBAO_COOKIE_HELP)
+            return
 
         cookie_header, pair_count = _extract_yuanbao_cookie_header(raw_text)
         if not cookie_header:
