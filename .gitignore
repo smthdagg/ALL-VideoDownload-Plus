@@ -12,6 +12,7 @@ deploy/config.local.py
 deploy/cookies/*.txt
 deploy/package/
 *.tar.gz
+*.sha256
 *.session
 *.session-shm
 *.session-wal
