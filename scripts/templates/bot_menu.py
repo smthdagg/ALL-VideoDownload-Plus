@@ -3,8 +3,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-YUANBAO_COOKIE_COMMAND = "set_yuanbao_cookie"
-YUANBAO_COOKIE_DESCRIPTION = "更新视频号元宝 Cookie"
+ADMIN_COMMANDS = (
+    ("set_yuanbao_cookie", "更新视频号元宝 Cookie"),
+    ("users", "打开用户管理菜单"),
+    ("add_user", "添加可使用 Bot 的用户"),
+    ("remove_user", "移除可使用 Bot 的用户"),
+    ("list_users", "查看已授权用户"),
+)
+YUANBAO_COOKIE_COMMAND = ADMIN_COMMANDS[0][0]
 YUANBAO_COOKIE_HELP = (
     "更新视频号元宝 Cookie\n\n"
     "方式一：发送 /set_yuanbao_cookie Cookie: name=value; name2=value2\n\n"
@@ -24,12 +30,13 @@ def register_admin_bot_commands(app, admin_ids):
         logger.warning("Could not read the default Telegram command menu: %s", exc)
         default_commands = []
 
+    admin_command_names = {name for name, _ in ADMIN_COMMANDS}
     commands = [
         command
         for command in default_commands
-        if command.command != YUANBAO_COOKIE_COMMAND
+        if command.command not in admin_command_names
     ]
-    commands.append(BotCommand(YUANBAO_COOKIE_COMMAND, YUANBAO_COOKIE_DESCRIPTION))
+    commands.extend(BotCommand(name, description) for name, description in ADMIN_COMMANDS)
 
     for admin_id in admin_ids:
         try:

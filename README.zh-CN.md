@@ -340,6 +340,22 @@ scripts/local-up.sh
 
 这个 cookie 等同于你的登录态，请像密码一样保管。不要提交到 GitHub，不要贴到 issue，不要放进公开打包文件。
 
+## 用户管理与隔离
+
+管理员可以直接在 Telegram 维护运行时白名单，不需要重启 Bot：
+
+- `/users`：打开管理员用户管理菜单。
+- `/add_user 123456789`：立即授权一个 Telegram 用户；Telegram 未隐藏发送者 ID 时，也可以回复对方原始消息或转发消息发送 `/add_user`。
+- `/remove_user 123456789`：移除通过 Bot 动态添加的用户。
+- `/list_users`：查看管理员、配置文件授权用户和动态授权用户。
+- `/log 123456789`：管理员查看指定用户的下载记录。
+
+写在 `PRIVATE_ALLOWED_USERS` 中的是固定配置用户，必须从 `deploy/config.local.py` 移除并重启。移除用户只会撤销访问权限，不会自动删除该用户过去的日志和服务器目录。
+
+以下内容按 Telegram 用户 ID 隔离：私聊消息、回传媒体、临时下载文件、用户自己上传的 Cookie、格式/字幕偏好和 `/usage` 记录。平台公共解析 Cookie、元宝 Cookie、解析 sidecar 和公共元数据缓存仍由整个 Bot 服务共享。普通用户无法浏览其他人的文件或日志，管理员可以通过 `/log 用户ID` 查看指定用户记录。
+
+动态白名单保存在 `vendor/tg-ytdlp-bot/CONFIG/private_users.json`，公开安全打包会排除该文件，因为 Telegram 用户 ID 属于私人部署数据。
+
 ## 验证
 
 ```bash
