@@ -356,6 +356,18 @@ scripts/local-up.sh
 
 动态白名单保存在 `vendor/tg-ytdlp-bot/CONFIG/private_users.json`，公开安全打包会排除该文件，因为 Telegram 用户 ID 属于私人部署数据。
 
+### 用户申请与管理员审批
+
+分享下面的链接，把 `YOUR_BOT_USERNAME` 换成实际 Bot 用户名：
+
+```text
+https://t.me/YOUR_BOT_USERNAME?start=request_access
+```
+
+用户打开 Bot 并点击 Start。由于尚未授权，Bot 会显示“申请使用权限”按钮。用户点击后只会创建一条待审批记录，并把申请人的姓名、用户名和 Telegram 数字 ID 发送给所有管理员。
+
+管理员在 Telegram 审批通知中点击“批准”或“拒绝”。批准后运行时白名单立即更新，申请人也会收到通知，无需重启。重复点击申请不会反复通知管理员；申请被拒绝后 24 小时内不能再次提交。所有待审批记录也会显示在 `/users` 菜单中。
+
 ## 验证
 
 ```bash

@@ -341,6 +341,18 @@ Private chats, returned media, temporary downloads, uploaded user cookies, forma
 
 The dynamic allowlist is stored in `vendor/tg-ytdlp-bot/CONFIG/private_users.json`. It is excluded from public-safe packages because Telegram user IDs are private deployment data.
 
+### Access Request and Approval
+
+Share the following link, replacing `YOUR_BOT_USERNAME` with the Bot username:
+
+```text
+https://t.me/YOUR_BOT_USERNAME?start=request_access
+```
+
+The user opens the Bot and presses Start. Because the account is not yet authorized, the Bot displays an `Apply for access` button. Pressing it creates one pending request and sends every administrator an approval message containing the applicant's name, username, and numeric Telegram ID.
+
+An administrator presses `Approve` or `Reject` in Telegram. Approval updates the runtime allowlist immediately and notifies the applicant; no restart is required. Duplicate pending requests do not generate repeated administrator notifications. A rejected account must wait 24 hours before submitting another request. Pending requests also appear in `/users`.
+
 ## Validation
 
 Run local tests:

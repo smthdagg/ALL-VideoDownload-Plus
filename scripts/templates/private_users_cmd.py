@@ -6,7 +6,11 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from CONFIG.config import Config
 from HELPERS.app_instance import get_app
 from HELPERS.decorators import background_handler
-from HELPERS.private_users import get_private_user_store, normalize_user_id
+from HELPERS.private_users import (
+    collect_allowed_user_ids,
+    get_private_user_store,
+    normalize_user_id,
+)
 from HELPERS.safe_messeger import safe_send_message
 
 
@@ -30,6 +34,47 @@ def _configured_user_ids():
     return result
 
 
+def _all_allowed_user_ids():
+    return collect_allowed_user_ids(
+        Config.ADMIN,
+        getattr(Config, "PRIVATE_ALLOWED_USERS", []),
+        get_private_user_store().list_ids(),
+    )
+
+
+def _profile(user):
+    return {
+        "first_name": getattr(user, "first_name", None),
+        "last_name": getattr(user, "last_name", None),
+        "username": getattr(user, "username", None),
+    }
+
+
+def _request_label(user_id, metadata):
+    name = " ".join(
+        value for value in (metadata.get("first_name"), metadata.get("last_name")) if value
+    ).strip() or "未提供姓名"
+    username = f"@{metadata['username']}" if metadata.get("username") else "无用户名"
+    return f"{name}（{username}，ID: {user_id}）"
+
+
+def _approval_keyboard(user_id):
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("批准", callback_data=f"private_users|approve|{user_id}"),
+        InlineKeyboardButton("拒绝", callback_data=f"private_users|reject|{user_id}"),
+    ]])
+
+
+def _notify_admins(app, user_id, metadata):
+    text = (
+        "收到新的 Bot 使用申请\n\n"
+        f"{_request_label(user_id, metadata)}\n\n"
+        "批准后用户立即获得权限，无需重启。"
+    )
+    for admin_id in Config.ADMIN:
+        safe_send_message(int(admin_id), text, reply_markup=_approval_keyboard(user_id))
+
+
 def _target_user_id(message):
     text = (message.text or message.caption or "").strip()
     parts = text.split(maxsplit=1)
@@ -51,14 +96,20 @@ def _target_user_id(message):
 
 
 def _menu_keyboard():
-    return InlineKeyboardMarkup([
+    rows = [
         [
             InlineKeyboardButton("添加用户", callback_data="private_users|add_help"),
             InlineKeyboardButton("移除用户", callback_data="private_users|remove_help"),
         ],
         [InlineKeyboardButton("查看已授权用户", callback_data="private_users|list")],
-        [InlineKeyboardButton("关闭", callback_data="private_users|close")],
-    ])
+    ]
+    for user_id in sorted(get_private_user_store().list_pending_requests())[:20]:
+        rows.append([
+            InlineKeyboardButton(f"批准 {user_id}", callback_data=f"private_users|approve|{user_id}"),
+            InlineKeyboardButton("拒绝", callback_data=f"private_users|reject|{user_id}"),
+        ])
+    rows.append([InlineKeyboardButton("关闭", callback_data="private_users|close")])
+    return InlineKeyboardMarkup(rows)
 
 
 def _list_text():
@@ -81,6 +132,8 @@ def _list_text():
             date_text = "未知"
         lines.append(f"- {user_id}（添加于 {date_text}）")
     lines.extend([
+        "",
+        f"待审批申请：{len(store.list_pending_requests())} 人",
         "",
         "添加：/add_user 用户ID，或回复/转发对方消息发送 /add_user",
         "移除：/remove_user 用户ID",
@@ -171,11 +224,59 @@ def remove_private_user(app, message):
 @app.on_callback_query(filters.regex(r"^private_users\|"))
 def private_users_callback(app, callback_query):
     user_id = callback_query.from_user.id
+    parts = callback_query.data.split("|")
+    action = parts[1] if len(parts) > 1 else ""
+
+    if action == "request":
+        if user_id in _all_allowed_user_ids():
+            callback_query.answer("你已经拥有使用权限。", show_alert=True)
+            return
+        profile = _profile(callback_query.from_user)
+        state = get_private_user_store().submit_request(user_id, profile)
+        if state == "created":
+            _notify_admins(app, user_id, profile)
+            callback_query.answer("申请已提交，请等待管理员审批。", show_alert=True)
+        elif state == "pending":
+            callback_query.answer("申请正在等待管理员审批，请勿重复提交。", show_alert=True)
+        elif state == "rejected":
+            callback_query.answer("申请刚被拒绝，请稍后再申请或联系管理员。", show_alert=True)
+        else:
+            callback_query.answer("你已经拥有使用权限。", show_alert=True)
+        return
+
     if not _is_admin(user_id):
         callback_query.answer("只有管理员可以管理用户。", show_alert=True)
         return
 
-    action = callback_query.data.split("|", 1)[1]
+    if action in {"approve", "reject"}:
+        try:
+            target_id = normalize_user_id(parts[2])
+        except (IndexError, ValueError):
+            callback_query.answer("申请数据无效。", show_alert=True)
+            return
+        store = get_private_user_store()
+        handled = (
+            store.approve(target_id, reviewed_by=user_id)
+            if action == "approve"
+            else store.reject(target_id, reviewed_by=user_id)
+        )
+        if not handled:
+            callback_query.answer("该申请已由其他管理员处理。", show_alert=True)
+            return
+        if action == "approve":
+            user_text = "你的 Bot 使用申请已通过，现在可以直接发送视频链接。"
+            admin_text = f"已批准用户 {target_id}，权限立即生效。"
+        else:
+            user_text = "你的 Bot 使用申请未通过。如有疑问，请联系管理员。"
+            admin_text = f"已拒绝用户 {target_id} 的申请。"
+        safe_send_message(target_id, user_text)
+        try:
+            callback_query.edit_message_text(admin_text)
+        except Exception:
+            pass
+        callback_query.answer(admin_text)
+        return
+
     if action == "close":
         callback_query.message.delete()
         callback_query.answer()

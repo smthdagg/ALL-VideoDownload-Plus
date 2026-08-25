@@ -108,10 +108,20 @@ def patch_instagram_gallery_fallback() -> None:
 def patch_limiter() -> None:
     path = APP / "HELPERS" / "limitter.py"
     text = path.read_text(encoding="utf-8")
-    private_users_import = (
+    old_private_users_import = (
         "from HELPERS.private_users import collect_allowed_user_ids, get_private_user_store\n"
     )
-    if private_users_import not in text:
+    private_users_import = (
+        "from HELPERS.private_users import (\n"
+        "    build_access_request_markup,\n"
+        "    collect_allowed_user_ids,\n"
+        "    get_private_user_store,\n"
+        ")\n"
+    )
+    if old_private_users_import in text:
+        text = text.replace(old_private_users_import, private_users_import, 1)
+        path.write_text(text, encoding="utf-8")
+    elif private_users_import not in text:
         text = text.replace(
             "from CONFIG.config import Config\n",
             "from CONFIG.config import Config\n" + private_users_import,
@@ -150,8 +160,12 @@ def deny_private_user(message):
     try:
         safe_send_message(
             chat_id=message.chat.id,
-            text="This is a private bot. Access is restricted.",
+            text=(
+                "这是私人 Bot，你当前还没有使用权限。\n\n"
+                "点击下方按钮提交申请，管理员批准后即可使用。"
+            ),
             message=message,
+            reply_markup=build_access_request_markup(),
         )
     except Exception:
         pass
@@ -173,6 +187,20 @@ def deny_private_user(message):
             helper.index("def is_private_user_allowed")
         ]
         path.write_text(text[:start] + new_function + text[end:], encoding="utf-8")
+
+    text = path.read_text(encoding="utf-8")
+    old_denial = '''            text="This is a private bot. Access is restricted.",
+            message=message,
+'''
+    new_denial = '''            text=(
+                "这是私人 Bot，你当前还没有使用权限。\\n\\n"
+                "点击下方按钮提交申请，管理员批准后即可使用。"
+            ),
+            message=message,
+            reply_markup=build_access_request_markup(),
+'''
+    if old_denial in text:
+        path.write_text(text.replace(old_denial, new_denial, 1), encoding="utf-8")
     replace_once(
         path,
         """def is_user_in_channel(app, message):
