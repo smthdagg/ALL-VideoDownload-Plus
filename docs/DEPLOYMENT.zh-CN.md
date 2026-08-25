@@ -13,6 +13,22 @@
 当前容器基线为 Python 3.12、稳定版 yt-dlp 2026.08.19 和
 bgutil-ytdlp-pot-provider 1.3.2。
 
+`.env` 中的存储保护默认值如下：
+
+```dotenv
+DISK_WARNING_PERCENT=75
+DISK_HIGH_PERCENT=80
+DISK_TARGET_PERCENT=70
+MEDIA_RETENTION_MINUTES=120
+METADATA_RETENTION_DAYS=2
+MAX_MEDIA_STORAGE_GB=0
+```
+
+Bot 达到 75% 会在私聊中提示用户发送 `/clean`；同一用户 6 小时内最多收到一次。VPS
+清理定时器每 30 分钟运行一次，达到 80% 后删除最旧的可清理媒体，直到降到 70%。
+`MAX_MEDIA_STORAGE_GB` 可设置所有用户媒体的额外总容量上限，`0` 表示不启用独立容量上限。
+设置、Cookie、权限和日志不会被这些清理规则删除。
+
 ## 本地安装
 
 ```bash

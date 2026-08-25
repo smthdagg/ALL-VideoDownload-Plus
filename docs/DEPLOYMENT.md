@@ -18,6 +18,23 @@ SSH ports, credentials, and cookies are intentionally not stored in Git.
 The supported container baseline is Python 3.12, stable yt-dlp 2026.08.19, and
 bgutil-ytdlp-pot-provider 1.3.2.
 
+Storage protection defaults are configured in `.env`:
+
+```dotenv
+DISK_WARNING_PERCENT=75
+DISK_HIGH_PERCENT=80
+DISK_TARGET_PERCENT=70
+MEDIA_RETENTION_MINUTES=120
+METADATA_RETENTION_DAYS=2
+MAX_MEDIA_STORAGE_GB=0
+```
+
+At 75% disk usage, the Bot sends a private-user warning with `/clean`, limited
+to once per user every six hours. The VPS cleanup timer runs every 30 minutes;
+at 80% it removes the oldest eligible media until usage falls below 70%.
+`MAX_MEDIA_STORAGE_GB` adds an optional total media cap for all users; `0`
+disables the separate cap. Settings, Cookies, access state, and logs are kept.
+
 ## Local Installation
 
 ```bash

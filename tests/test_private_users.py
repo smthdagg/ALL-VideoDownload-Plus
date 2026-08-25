@@ -181,6 +181,16 @@ class PrivateUserStoreTest(unittest.TestCase):
         pyrogram_types.InlineKeyboardMarkup = Markup
         previous_pyrogram = sys.modules.get("pyrogram")
         previous_types = sys.modules.get("pyrogram.types")
+        previous_helpers = sys.modules.get("HELPERS")
+        previous_i18n = sys.modules.get("HELPERS.private_i18n")
+        helpers = types.ModuleType("HELPERS")
+        i18n_spec = importlib.util.spec_from_file_location(
+            "HELPERS.private_i18n", ROOT / "scripts" / "templates" / "private_i18n.py"
+        )
+        i18n_module = importlib.util.module_from_spec(i18n_spec)
+        i18n_spec.loader.exec_module(i18n_module)
+        sys.modules["HELPERS"] = helpers
+        sys.modules["HELPERS.private_i18n"] = i18n_module
         sys.modules["pyrogram"] = pyrogram
         sys.modules["pyrogram.types"] = pyrogram_types
         try:
@@ -194,6 +204,14 @@ class PrivateUserStoreTest(unittest.TestCase):
                 sys.modules.pop("pyrogram.types", None)
             else:
                 sys.modules["pyrogram.types"] = previous_types
+            if previous_helpers is None:
+                sys.modules.pop("HELPERS", None)
+            else:
+                sys.modules["HELPERS"] = previous_helpers
+            if previous_i18n is None:
+                sys.modules.pop("HELPERS.private_i18n", None)
+            else:
+                sys.modules["HELPERS.private_i18n"] = previous_i18n
 
         button = markup.inline_keyboard[0][0]
         self.assertEqual(button.text, "Apply for access")

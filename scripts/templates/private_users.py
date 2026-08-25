@@ -58,7 +58,11 @@ def build_access_request_markup(user_id=None):
     from HELPERS.private_i18n import text
 
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(text("apply_access", user_id=user_id, language="en" if user_id is None else None), callback_data="private_users|request")]
+        [InlineKeyboardButton(text("apply_access", user_id=user_id, language="en" if user_id is None else None), callback_data="private_users|request")],
+        [
+            InlineKeyboardButton("中文", callback_data="lang_select_zh"),
+            InlineKeyboardButton("English", callback_data="lang_select_en"),
+        ],
     ])
 
 

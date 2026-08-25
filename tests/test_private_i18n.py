@@ -81,6 +81,12 @@ class PrivateI18nTest(unittest.TestCase):
             module.text("cookie_updated", language="zh", count=3),
             "元宝 Cookie 已更新，识别到 3 个 Cookie；当前进程已刷新，重启后仍会保留。",
         )
+        self.assertIn("/cookie", module.text("request_user_approved", language="zh"))
+        self.assertIn("Telegram 数字 ID", module.text("request_user_approved", language="zh"))
+        self.assertIn("/cookies_from_browser", module.text("request_user_approved", language="en"))
+        self.assertIn("not shared", module.text("request_user_approved", language="en").lower())
+        self.assertIn("磁盘", module.text("disk_warning", language="zh"))
+        self.assertIn("disk", module.text("disk_warning", language="en").lower())
 
     def test_missing_translation_key_is_rejected_during_development(self):
         module = load_module()

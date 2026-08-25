@@ -123,6 +123,16 @@ class MigrationContractTest(unittest.TestCase):
             self.assertIn("WeChat", text)
             self.assertIn("/lang", text)
 
+    def test_storage_warning_and_cleanup_contract_are_tracked(self):
+        hardening = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")
+        cleanup = (ROOT / "scripts/runtime-cleanup.sh").read_text(encoding="utf-8")
+        env_example = (ROOT / ".env.example").read_text(encoding="utf-8")
 
+        self.assertIn("storage_notice.py", hardening)
+        self.assertIn("maybe_send_disk_warning(message)", hardening)
+        self.assertIn("MEDIA_RETENTION_MINUTES", cleanup)
+        self.assertIn("MAX_MEDIA_STORAGE_GB", cleanup)
+        self.assertIn("DISK_WARNING_PERCENT=75", env_example)
+        self.assertIn("DISK_HIGH_PERCENT=80", env_example)
 if __name__ == "__main__":
     unittest.main()

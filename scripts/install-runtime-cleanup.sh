@@ -13,6 +13,7 @@ After=docker.service
 
 [Service]
 Type=oneshot
+EnvironmentFile=-$SCRIPT_DIR/../.env
 Environment=APP_DIR=$APP_DIR
 ExecStart=/usr/local/bin/video-download-runtime-cleanup
 EOF
