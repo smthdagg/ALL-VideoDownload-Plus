@@ -23,6 +23,12 @@ def install_platform_runtime() -> None:
     destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def install_bot_menu() -> None:
+    source = ROOT / "scripts" / "templates" / "bot_menu.py"
+    destination = APP / "HELPERS" / "bot_menu.py"
+    destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+
 def patch_douyin_audio_download() -> None:
     path = APP / "DOWN_AND_UP" / "down_and_audio.py"
     replace_once(
@@ -678,6 +684,112 @@ def patch_yuanbao_cookie_command() -> None:
     path.write_text(text.replace(marker, block + "\n" + marker, 1), encoding="utf-8")
 
 
+def patch_yuanbao_cookie_menus() -> None:
+    settings_path = APP / "COMMANDS" / "settings_cmd.py"
+    settings_text = settings_path.read_text(encoding="utf-8")
+    if "from HELPERS.bot_menu import YUANBAO_COOKIE_HELP\n" not in settings_text:
+        settings_text = settings_text.replace(
+            "from HELPERS.decorators import background_handler\n",
+            "from HELPERS.decorators import background_handler\n"
+            "from HELPERS.bot_menu import YUANBAO_COOKIE_HELP\n",
+            1,
+        )
+
+    if 'callback_data="settings__cmd__yuanbao_cookie"' not in settings_text:
+        old_cookie_menu = '''    if data == "cookies":
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_DOWNLOAD_COOKIE_BUTTON_MSG,
+                                  callback_data="settings__cmd__download_cookie")],
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_COOKIES_FROM_BROWSER_BUTTON_MSG,
+                                  callback_data="settings__cmd__cookies_from_browser")],
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_CHECK_COOKIE_BUTTON_MSG,
+                                  callback_data="settings__cmd__check_cookie")],
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_SAVE_AS_COOKIE_BUTTON_MSG,
+                                  callback_data="settings__cmd__save_as_cookie")],
+            [InlineKeyboardButton(safe_get_messages(user_id).SUBS_BACK_BUTTON_MSG, callback_data="settings__menu__back")]
+        ])
+'''
+        new_cookie_menu = '''    if data == "cookies":
+        cookie_buttons = [
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_DOWNLOAD_COOKIE_BUTTON_MSG,
+                                  callback_data="settings__cmd__download_cookie")],
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_COOKIES_FROM_BROWSER_BUTTON_MSG,
+                                  callback_data="settings__cmd__cookies_from_browser")],
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_CHECK_COOKIE_BUTTON_MSG,
+                                  callback_data="settings__cmd__check_cookie")],
+            [InlineKeyboardButton(safe_get_messages(user_id).SETTINGS_SAVE_AS_COOKIE_BUTTON_MSG,
+                                  callback_data="settings__cmd__save_as_cookie")],
+        ]
+        if int(user_id) in Config.ADMIN:
+            cookie_buttons.append([
+                InlineKeyboardButton(
+                    "更新视频号元宝 Cookie",
+                    callback_data="settings__cmd__yuanbao_cookie",
+                )
+            ])
+        cookie_buttons.append([
+            InlineKeyboardButton(
+                safe_get_messages(user_id).SUBS_BACK_BUTTON_MSG,
+                callback_data="settings__menu__back",
+            )
+        ])
+        keyboard = InlineKeyboardMarkup(cookie_buttons)
+'''
+        if old_cookie_menu not in settings_text:
+            raise RuntimeError(f"Expected cookie settings menu not found in {settings_path}")
+        settings_text = settings_text.replace(old_cookie_menu, new_cookie_menu, 1)
+
+    if 'if data == "yuanbao_cookie":' not in settings_text:
+        callback_marker = '''    data = callback_query.data.split("__")[2]
+
+    # For commands that are processed only via url_distractor, create a temporary Message
+'''
+        callback_block = '''    data = callback_query.data.split("__")[2]
+
+    if data == "yuanbao_cookie":
+        if int(user_id) not in Config.ADMIN:
+            callback_query.answer("只有管理员可以更新元宝 Cookie。", show_alert=True)
+            return
+        safe_send_message(
+            user_id,
+            YUANBAO_COOKIE_HELP,
+            reply_parameters=ReplyParameters(message_id=callback_query.message.id),
+        )
+        callback_query.answer(safe_get_messages(user_id).SETTINGS_HINT_SENT_MSG)
+        return
+
+    # For commands that are processed only via url_distractor, create a temporary Message
+'''
+        if callback_marker not in settings_text:
+            raise RuntimeError(f"Expected settings callback marker not found in {settings_path}")
+        settings_text = settings_text.replace(callback_marker, callback_block, 1)
+    settings_path.write_text(settings_text, encoding="utf-8")
+
+    magic_path = APP / "magic.py"
+    magic_text = magic_path.read_text(encoding="utf-8")
+    if "from HELPERS.bot_menu import register_admin_bot_commands\n" not in magic_text:
+        magic_text = magic_text.replace(
+            "from HELPERS.safe_messeger import *\n",
+            "from HELPERS.safe_messeger import *\n"
+            "from HELPERS.bot_menu import register_admin_bot_commands\n",
+            1,
+        )
+    if "    register_admin_bot_commands(app, Config.ADMIN)\n" not in magic_text:
+        magic_text = magic_text.replace(
+            'if __name__ == "__main__":\n    app.start()\n',
+            'if __name__ == "__main__":\n    app.start()\n'
+            "    register_admin_bot_commands(app, Config.ADMIN)\n",
+            1,
+        )
+    magic_path.write_text(magic_text, encoding="utf-8")
+
+    commands_path = APP / "TXT" / "commands.txt"
+    commands_text = commands_path.read_text(encoding="utf-8")
+    menu_line = "set_yuanbao_cookie - Update WeChat Channels Yuanbao cookie (admin only)\n"
+    if menu_line not in commands_text:
+        commands_path.write_text(commands_text.rstrip() + "\n" + menu_line, encoding="utf-8")
+
+
 def patch_tiktok_telegram_safe_format() -> None:
     path = APP / "DOWN_AND_UP" / "down_and_up.py"
     text = path.read_text(encoding="utf-8")
@@ -917,6 +1029,7 @@ def patch_x_multi_video_format_probe() -> None:
 
 def main() -> None:
     install_platform_runtime()
+    install_bot_menu()
     patch_limiter()
     patch_dashboard()
     patch_compose()
@@ -929,6 +1042,7 @@ def main() -> None:
     patch_share_text_tag_parser()
     patch_douyin_always_ask_error()
     patch_yuanbao_cookie_command()
+    patch_yuanbao_cookie_menus()
     patch_tiktok_telegram_safe_format()
     patch_x_multi_video_posts()
     patch_x_multi_video_format_probe()

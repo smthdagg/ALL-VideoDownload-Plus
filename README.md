@@ -293,8 +293,10 @@ Recommended workflow:
 1. Open <https://yuanbao.tencent.com/> in your browser and log in.
 2. Open browser developer tools, refresh the page, then find an authenticated request to `yuanbao.tencent.com`.
 3. Copy the request `Cookie` header, or export it as a cookie file.
-4. Send `/set_yuanbao_cookie` to the bot as an admin.
-5. Reply with the Cookie header or cookie file.
+4. As an admin, open `/settings` -> Cookies -> `Update WeChat Channels Yuanbao Cookie`, or select `/set_yuanbao_cookie` from the Telegram command menu.
+5. Paste the Cookie on the command line. For a long Cookie or a cookie file, send it first and then reply to that message with `/set_yuanbao_cookie`.
+
+The Yuanbao menu entries are registered only for administrator chats. Other users cannot see the scoped command or use the update handler.
 
 If the Yuanbao request returns HTTP `401`, the saved cookie has expired or been rejected. Log in again and repeat the steps above. Yuanbao occasionally changes its internal API paths, so capture a cookie from the current web app instead of relying on an old endpoint-specific tutorial.
 

@@ -321,8 +321,10 @@ scripts/local-up.sh
 2. 打开浏览器开发者工具，然后刷新页面。
 3. 在 Network / 网络里找到一个已登录状态下发往 `yuanbao.tencent.com` 的请求。
 4. 复制请求里的 `Cookie` header，或者导出 cookie 文件。
-5. 在 Telegram 里用管理员账号发送 `/set_yuanbao_cookie`。
-6. 把 Cookie header 或 cookie 文件回复给 bot。
+5. 用管理员账号打开 `/settings` -> Cookies -> `更新视频号元宝 Cookie`，也可以从 Telegram 命令菜单选择 `/set_yuanbao_cookie`。
+6. Cookie 较短时可以直接跟在命令后面；Cookie 很长或使用文件时，先发送 Cookie 消息或上传文件，再回复该消息发送 `/set_yuanbao_cookie`。
+
+元宝 Cookie 菜单只为管理员聊天注册，普通用户看不到这个专用命令，也无法调用更新功能。
 
 如果元宝请求返回 HTTP `401`，表示保存的 cookie 已经过期或被拒绝，需要重新登录并按上述步骤更新。元宝可能调整内部接口地址，因此应从当前网页应用获取 cookie，不要依赖旧教程中的固定接口。
 
