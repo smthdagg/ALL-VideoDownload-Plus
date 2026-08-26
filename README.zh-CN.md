@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/github/license/smthdagg/ALL-VideoDownload-Plus)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](docs/DEPLOYMENT.zh-CN.md)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](docs/DEPLOYMENT.zh-CN.md)
+[![Linux.do](https://img.shields.io/badge/Linux.do-community-18A4E0)](https://linux.do/)
 
 ALL VideoDownload Plus 是一个独立发布的 Telegram 多平台下载项目，不是上游项目的公开模板。它重点支持视某号、某音、TT、Instagram、X、YouTube，同时兼容 8站、小某书以及其他由 `yt-dlp` / `gallery-dl` 支持的平台。用户只需要把原始平台链接发给 Bot，Bot 就会自动解析、下载并回传媒体。
 

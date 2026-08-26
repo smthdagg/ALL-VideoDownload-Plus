@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/github/license/smthdagg/ALL-VideoDownload-Plus)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](docs/DEPLOYMENT.md)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](docs/DEPLOYMENT.md)
+[![Linux.do](https://img.shields.io/badge/Linux.do-community-18A4E0)](https://linux.do/)
 
 ![User access flow](docs/images/user-access-flow.svg)
 
