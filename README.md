@@ -593,24 +593,14 @@ Never commit real bot tokens, Telegram API credentials, cookies, session files, 
 
 ---
 
-## OpenWrt 私有源安装 / Install from the private OpenWrt feed
+## Packaging Scope
 
-本项目已在私有 OpenWrt 软件源中预留目录（目录名与仓库同名）：
-`https://smthdagg.github.io/Smthdagg-Repo-feeds/ALL-VideoDownload-Plus/`
+ALL VideoDownload Plus is a Python/Docker Telegram service. Its supported
+installation methods are the local Docker workflow and the VPS Docker
+workflow documented above. It is **not an OpenWrt `opkg` package**, and this
+repository does not publish an OpenWrt feed or an installable OpenWrt binary.
 
-包发布后，在 OpenWrt 路由器上执行 / Once packages are published, run on the router:
-
-```sh
-# 1) 导入签名公钥（一次即可，长期不变） / import the signing key (once, long-lived)
-wget -O /etc/opkg/keys/f7050198aa77cf15 \
-  https://raw.githubusercontent.com/smthdagg/Smthdagg-Repo-feeds/main/wloc.pub
-# 2) 添加本项目源 / add this project's feed
-echo "src/gz ALL-VideoDownload-Plus https://smthdagg.github.io/Smthdagg-Repo-feeds/ALL-VideoDownload-Plus" \
-  >> /etc/opkg/customfeeds.conf
-# 3) 安装 / install
-opkg update && opkg install ALL-VideoDownload-Plus
-```
-
-> 状态：目录已预留，尚未发布 OpenWrt 包；发布后本节会更新为具体版本号。
->
-> Status: directory reserved, no packages published yet; this section will be updated with concrete versions once packages ship.
+An OpenWrt feed directory may exist in a separate private repository for
+projects that are specifically built as OpenWrt packages. That feed is not a
+dependency of this project and must not be used to install this Bot on a VPS,
+desktop, or ordinary Linux server.
