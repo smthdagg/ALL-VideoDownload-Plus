@@ -531,6 +531,15 @@ https://t.me/YOUR_BOT_USERNAME?start=request_access
 
 永久拉黑的优先级高于动态白名单和配置文件授权：它会立即撤销已有权限、删除待审批申请，并且该账号以后看不到申请按钮。只有管理员使用 `/unblacklist_user 用户ID` 才能恢复其申请资格。待审批记录和永久黑名单都会显示在 `/users` 菜单中。
 
+## 打包范围
+
+ALL VideoDownload Plus 是 Python / Docker Telegram 服务，支持的安装方式是
+上文的本地 Docker 安装和 VPS Docker 部署。本项目**不是 OpenWrt 的 `opkg`
+软件包**，也不发布可在 OpenWrt 路由器上直接安装的二进制包。
+
+其他专门开发为 OpenWrt 软件包的项目，可以单独使用私有 OpenWrt 源；该源
+不是本项目的依赖，也不能用来安装本 Bot。
+
 ## 验证
 
 ```bash
