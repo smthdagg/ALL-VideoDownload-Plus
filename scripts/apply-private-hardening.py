@@ -25,6 +25,12 @@ def install_platform_runtime() -> None:
     destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def install_douyin_public_api() -> None:
+    source = ROOT / "scripts" / "templates" / "douyin_public_api.py"
+    destination = APP / "URL_PARSERS" / "douyin_public_api.py"
+    destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+
 def install_bot_menu() -> None:
     source = ROOT / "scripts" / "templates" / "bot_menu.py"
     destination = APP / "HELPERS" / "bot_menu.py"
@@ -1991,6 +1997,7 @@ def patch_x_multi_video_format_probe() -> None:
 
 def main() -> None:
     install_platform_runtime()
+    install_douyin_public_api()
     install_bot_menu()
     install_tiktok_retry()
     install_dockerignore()

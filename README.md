@@ -132,6 +132,8 @@ No downloader can guarantee permanent access to every platform. Platform changes
   - normalizes shared text and short links;
   - uses mobile page metadata when possible;
   - can use the optional `Evil0ctal/Douyin_TikTok_Download_API` sidecar;
+  - includes a best-effort cookie-free public-detail API fallback based on a
+    locally generated web signature;
   - supports an optional remote resolver endpoint.
 - 视某号 support:
   - handles public shared video links;
@@ -147,7 +149,7 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **Safer dashboard exposure**: Docker Compose binds the dashboard to `127.0.0.1:5555` by default, so VPS users can access it through SSH tunnel instead of exposing it to the public internet.
 - **Two-level user administration**: frequent approval and blocking actions stay in Telegram, while the Web dashboard adds search, status filters, history, and a fuller management view.
 - **Complete bilingual UI**: Bot messages, menus, download status, common errors, Cookie guides, Web login, operations dashboard, and user administration support Chinese and English; the Web UI remembers the most recent choice.
-- **某音 resolver chain**: shared text and short links are normalized; the resolver tries mobile page metadata first, then optional `Evil0ctal/Douyin_TikTok_Download_API`, then optional remote resolver or captured resolver output.
+- **某音 resolver chain**: shared text and short links are normalized; the resolver tries mobile page metadata first, then the optional sidecar, a cookie-free public-detail fallback, an optional remote resolver, and captured resolver output. The public fallback sends no account Cookie and may be rejected by anonymous-request protection.
 - **视某号 support**: adds a resolver for public shared video links, including a Yuanbao Cookie fallback when the public page only exposes preview metadata.
 - **Telegram admin cookie update**: `/set_yuanbao_cookie` lets an admin update Yuanbao cookies directly in Telegram by replying with a cookie file or raw Cookie header.
 - **TT Telegram-safe format preference**: prefers H.264 + AAC MP4 formats to avoid videos that upload successfully but play silently or poorly inside Telegram.
@@ -155,7 +157,7 @@ The upstream `tg-ytdlp-bot` provides the core Telegram bot, `yt-dlp`/`gallery-dl
 - **X/Twitter multi-video posts**: when a single X/Twitter status contains multiple video entries, the patch probes all entries and downloads them as a multi-item post instead of only taking the first video.
 - **Public-safe packaging**: `scripts/package-for-vps.sh` excludes generated runtime config, cookies, Telegram session files, logs, downloads, and private archives by default; `--include-private` is explicit for personal migration only.
 - **VPS watchdog loop**: `scripts/vps-watchdog.sh` checks Docker, the app container, NTP time sync, and Pyrogram session startup, then restarts only the bot service when it detects time-drift or crash symptoms.
-- **Automatic storage protection**: `scripts/runtime-cleanup.sh` removes stale media and partial files while preserving user settings, cookies, logs, and caches. It runs every 30 minutes on the VPS, and removes the oldest eligible media first when disk usage exceeds 80%.
+- **Automatic storage protection**: `scripts/runtime-cleanup.sh` removes stale media and partial files while preserving user settings, cookies, logs, format preferences, and caches. It runs every 30 minutes on the VPS, and removes the oldest eligible media first when disk usage exceeds 80%. Only explicit `/clean format` or `/clean all` removes the saved format preference.
 - **User-facing storage warnings**: the Bot warns private users at 75% disk usage, at most once every six hours per user, and points them to `/clean`. The cleanup service removes media after the configured retention period and can enforce an optional `MAX_MEDIA_STORAGE_GB` cap.
 - **Patch-driven upstream workflow**: local changes are encoded in `scripts/apply-private-hardening.py` and `scripts/templates/`, so the upstream bot can be re-cloned and patched reproducibly.
 - **Focused tests**: resolver tests cover custom 某音 mobile and 视某号 behavior.

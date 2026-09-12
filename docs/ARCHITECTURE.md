@@ -16,6 +16,7 @@ flowchart LR
     router --> ytdlp["yt-dlp / gallery-dl"]
     router --> douyin["custom Douyin resolver"]
     router --> wx["custom WeChat Channels resolver"]
+    douyin --> public["cookie-free public API fallback"]
     douyin --> sidecar["optional Douyin API sidecar"]
     wx --> yuanbao["optional Yuanbao cookie fallback"]
     ytdlp --> ffmpeg["ffmpeg"]
@@ -58,11 +59,18 @@ Main patch areas:
 - private-mode authorization for personal bot usage;
 - dashboard binding and runtime safety defaults;
 - custom Douyin direct-video resolution;
+- cookie-free Douyin public-detail fallback using a locally generated web
+  signature; it is attempted only after the mobile resolver and sidecar;
 - custom WeChat Channels resolution and Yuanbao cookie fallback;
 - Telegram admin command for updating Yuanbao cookies;
 - TikTok H.264 + AAC MP4 preference and bounded challenge retries;
 - Docker Compose sidecars for cookies, PO token helper, and optional Douyin API.
 - private/public migration packaging with automatic source-service recovery.
+
+The cookie-free public fallback does not forward a user's account Cookie. It
+uses public item metadata and may be rejected by Douyin's anonymous-request
+protection; the mobile resolver, sidecar, remote resolver, and Reqable capture
+remain available as fallbacks.
 
 ## Private Files
 

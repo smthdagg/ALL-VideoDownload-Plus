@@ -105,6 +105,7 @@ English documentation: [README.md](README.md).
 - **两层用户管理**：管理员可在 Bot 内完成审批、拒绝、授权、撤权和永久拉黑；Web 后台提供搜索、状态筛选、用户历史和更完整的操作界面。
 - **完整双语界面**：Bot 消息、命令菜单、设置、下载状态、常见错误、Cookie 向导，以及 Web 登录页、运行面板和用户管理页均提供中文 / English；Web 会记住最近选择的语言。
 - **某音解析链路**：支持某音分享文案、短链归一化；优先尝试移动端页面数据，再尝试可选的 `Evil0ctal/Douyin_TikTok_Download_API` sidecar、远程解析接口或 Reqable 抓包输出。
+- **某音无 Cookie 备用解析**：移动端页面和 sidecar 都没有结果时，尝试使用本地生成的网页签名请求公开视频详情；此路径不会发送账号 Cookie，但可能被某音的匿名请求风控拒绝。
 - **视某号解析**：增加公开视频分享解析；公开页面只有预览信息时，可用 Yuanbao Cookie 作为 fallback。
 - **Telegram 内更新 cookie**：管理员可用 `/set_yuanbao_cookie`，直接在 Telegram 里回复 cookie 文件或 Cookie header 来更新元宝 cookie。
 - **TT Telegram 兼容格式**：优先选 `H.264 + AAC + MP4`，避免某些 TT 视频上传成功但 Telegram 播放无声或兼容异常。
@@ -112,7 +113,7 @@ English documentation: [README.md](README.md).
 - **X/Twitter 多视频帖子**：一个 X/Twitter 帖子里如果有多个视频，补丁会探测全部 media entries，并按多视频任务下载，不再只取第一个。
 - **公开安全打包**：`scripts/package-for-vps.sh` 默认排除真实配置、cookies、Telegram session、日志、下载文件和私有压缩包；只有显式 `--include-private` 才会生成个人迁移包。
 - **VPS 自检循环**：`scripts/vps-watchdog.sh` 从系统层检查 Docker、app 容器、NTP 时间同步和 Pyrogram session；发现时间漂移或崩溃迹象时只重启 bot 服务。
-- **自动磁盘保护**：`scripts/runtime-cleanup.sh` 会清理过期媒体和下载残片，同时保留用户设置、Cookie、日志和缓存。VPS 上每 30 分钟运行一次，当磁盘使用率超过 80% 时会优先删除最旧的可清理媒体文件。
+- **自动磁盘保护**：`scripts/runtime-cleanup.sh` 会清理过期媒体和下载残片，同时保留用户设置、Cookie、日志、画质格式偏好和缓存。VPS 上每 30 分钟运行一次，当磁盘使用率超过 80% 时会优先删除最旧的可清理媒体文件。只有主动执行 `/clean format` 或 `/clean all` 才会删除已保存的格式偏好。
 - **补丁化维护上游**：自定义修改集中在 `scripts/apply-private-hardening.py` 和 `scripts/templates/`，以后重新 clone 上游 bot 后可以重复打补丁。
 - **聚焦测试**：为自定义的某音移动端解析、视某号解析保留了单元测试。
 
