@@ -20,6 +20,9 @@ were custom-developed with Codex assistance.
   the upstream bot.
 - [`Evil0ctal/Douyin_TikTok_Download_API`](https://github.com/Evil0ctal/Douyin_TikTok_Download_API):
   optional Douyin/TikTok resolver sidecar.
+- [`jiji262/douyin-downloader`](https://github.com/jiji262/douyin-downloader):
+  reference for the cookie-free Douyin web-signing approach; this repository
+  reimplements only the small public-detail fallback needed by the Bot.
 - [`Brainicism/bgutil-ytdlp-pot-provider`](https://github.com/Brainicism/bgutil-ytdlp-pot-provider):
   optional YouTube PO token provider.
 
@@ -30,7 +33,9 @@ were custom-developed with Codex assistance.
 - Private-mode authorization defaults for personal Telegram bot use.
 - Dashboard localhost binding and Docker deployment hardening.
 - Douyin share-text cleanup, short-link normalization, mobile page parsing, and
-  optional sidecar/remote resolver integration.
+  optional sidecar/remote/public-API resolver integration. The public fallback
+  sends no account Cookie and remains best-effort because Douyin may reject
+  anonymous signed requests.
 - WeChat Channels public-link resolver and optional Yuanbao cookie fallback.
 - Telegram admin command for updating Yuanbao cookies without editing files on
   the server.

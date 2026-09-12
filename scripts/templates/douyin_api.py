@@ -11,6 +11,7 @@ import requests
 
 from HELPERS.logger import logger
 from URL_PARSERS.normalizer import normalize_douyin_url
+from URL_PARSERS.douyin_public_api import build_detail_url
 
 
 DOUYIN_API_BASE_URL = os.getenv("DOUYIN_API_BASE_URL", "http://douyin-api")
@@ -22,6 +23,8 @@ DOUYIN_REQABLE_CAPTURE_DIR = os.getenv("DOUYIN_REQABLE_CAPTURE_DIR", "/reqable-c
 DOUYIN_REQABLE_CAPTURE_MAX_AGE_SECONDS = int(os.getenv("DOUYIN_REQABLE_CAPTURE_MAX_AGE_SECONDS", "3600"))
 DOUYIN_REQABLE_CAPTURE_ENABLED = os.getenv("DOUYIN_REQABLE_CAPTURE_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
 DOUYIN_REQABLE_CAPTURE_FIRST = os.getenv("DOUYIN_REQABLE_CAPTURE_FIRST", "0").strip().lower() in {"1", "true", "yes", "on"}
+DOUYIN_PUBLIC_API_ENABLED = os.getenv("DOUYIN_PUBLIC_API_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+DOUYIN_PUBLIC_API_TOKEN_ENABLED = os.getenv("DOUYIN_PUBLIC_API_TOKEN_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
 DOUYIN_MOBILE_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) "
@@ -339,6 +342,78 @@ def _fetch_local_sidecar(source_url: str) -> dict | None:
     return result
 
 
+def _fetch_public_api(source_url: str) -> dict | None:
+    """Fallback for public videos; deliberately sends no Cookie header."""
+    aweme_id = extract_douyin_aweme_id(source_url)
+    if not aweme_id:
+        return None
+    try:
+        user_agent = DOUYIN_MOBILE_HEADERS["User-Agent"]
+        ms_token = _fetch_public_ms_token(user_agent) if DOUYIN_PUBLIC_API_TOKEN_ENABLED else None
+        endpoint = build_detail_url(aweme_id, user_agent, ms_token)
+        response = requests.get(
+            endpoint,
+            headers={
+                **DOUYIN_MOBILE_HEADERS,
+                "Referer": "https://www.douyin.com/",
+                "Accept": "*/*",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            },
+            timeout=min(DOUYIN_API_TIMEOUT, 15),
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as exc:
+        logger.warning(f"Douyin public API fallback failed for {source_url}: {exc}")
+        return None
+
+    data = payload.get("aweme_detail") if isinstance(payload, dict) else None
+    if not isinstance(data, dict):
+        return None
+    direct_url = _find_first_media_url(data.get("video") or {})
+    if not direct_url:
+        return None
+    result = _as_ytdlp_info(source_url, data, direct_url, "douyin-public-api")
+    result["douyin_public_api_data"] = {"aweme_id": aweme_id}
+    return result
+
+
+def _fetch_public_ms_token(user_agent: str) -> str | None:
+    """Obtain the anonymous web token; no account cookie is involved."""
+    try:
+        config_response = requests.get(
+            "https://raw.githubusercontent.com/Johnserf-Seed/f2/main/f2/conf/conf.yaml",
+            timeout=3,
+        )
+        text = config_response.text
+        block = text[text.find("msToken:"):]
+        values = {}
+        for key in ("url", "magic", "version", "dataType", "ulr", "strData"):
+            match = re.search(rf"^\s+{key}:\s*(.+)$", block, re.MULTILINE)
+            if match:
+                values[key] = match.group(1).strip().strip('"\'')
+        if len(values) != 6:
+            return None
+        response = requests.post(
+            values["url"],
+            json={
+                "magic": int(values["magic"]),
+                "version": int(values["version"]),
+                "dataType": int(values["dataType"]),
+                "strData": values["strData"],
+                "ulr": int(values["ulr"]),
+                "tspFromClient": int(time.time() * 1000),
+            },
+            headers={"Content-Type": "application/json", "User-Agent": user_agent},
+            timeout=3,
+        )
+        token = response.cookies.get("msToken")
+        return token if isinstance(token, str) and len(token) > 100 else None
+    except Exception as exc:
+        logger.info(f"Douyin public msToken generation unavailable: {exc}")
+        return None
+
+
 def _fetch_remote_resolver(source_url: str) -> dict | None:
     if not DOUYIN_REMOTE_RESOLVER_URL:
         return None
@@ -437,4 +512,10 @@ def fetch_douyin_video(url: str) -> dict | None:
 
     if DOUYIN_REQABLE_CAPTURE_ENABLED and DOUYIN_REQABLE_CAPTURE_FIRST:
         return _fetch_reqable_capture(source_url) or _fetch_local_sidecar(source_url) or _fetch_remote_resolver(source_url)
-    return _fetch_mobile_share_page(source_url) or _fetch_local_sidecar(source_url) or _fetch_remote_resolver(source_url) or _fetch_reqable_capture(source_url)
+    return (
+        _fetch_mobile_share_page(source_url)
+        or _fetch_local_sidecar(source_url)
+        or (_fetch_public_api(source_url) if DOUYIN_PUBLIC_API_ENABLED else None)
+        or _fetch_remote_resolver(source_url)
+        or _fetch_reqable_capture(source_url)
+    )
