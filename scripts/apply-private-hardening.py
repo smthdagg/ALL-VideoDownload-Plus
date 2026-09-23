@@ -1995,6 +1995,26 @@ def patch_x_multi_video_format_probe() -> None:
         path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
+def patch_reply_keyboard_messages() -> None:
+    path = APP / "HELPERS" / "decorators.py"
+    text = path.read_text(encoding="utf-8")
+    start_marker = "def reply_with_keyboard(func):\n"
+    end_marker = "\ndef _extract_message_arg"
+    start = text.find(start_marker)
+    end = text.find(end_marker, start)
+    if start < 0 or end < 0:
+        raise RuntimeError(f"reply_with_keyboard block not found in {path}")
+
+    replacement = (
+        "def reply_with_keyboard(func):\n"
+        '    """Keep the legacy decorator API without posting invisible messages."""\n'
+        "    return func\n"
+    )
+    if text[start:end].rstrip("\n") == replacement.rstrip("\n"):
+        return
+    path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+
+
 def main() -> None:
     install_platform_runtime()
     install_douyin_public_api()
@@ -2024,6 +2044,7 @@ def main() -> None:
     patch_tiktok_telegram_safe_format()
     patch_x_multi_video_posts()
     patch_x_multi_video_format_probe()
+    patch_reply_keyboard_messages()
     print("Private hardening applied.")
 
 
