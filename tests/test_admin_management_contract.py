@@ -61,8 +61,16 @@ class AdminManagementContractTest(unittest.TestCase):
         self.assertIn("apply_tiktok_retry_patch", patch)
         self.assertIn("universal data for rehydration", retry)
         self.assertIn("unexpected response from webpage request", retry)
+        self.assertIn("tiktok api keeps sending the same page", retry)
+        self.assertIn("http error 403", retry)
         self.assertIn("range(1, max_attempts + 1)", retry)
         self.assertIn("time.sleep(attempt)", retry)
+
+    def test_tiktok_saved_format_keeps_safe_fallbacks(self):
+        patch = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")
+        self.assertIn("attempts.extend([", patch)
+        self.assertIn("TIKTOK_TELEGRAM_SAFE_FORMAT", patch)
+        self.assertIn("if _is_tiktok_url(original_url) or _is_tiktok_url(url):", patch)
 
     def test_docker_build_excludes_private_runtime_data(self):
         patch = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")

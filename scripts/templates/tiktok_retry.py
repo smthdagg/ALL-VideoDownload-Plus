@@ -11,6 +11,10 @@ _RETRYABLE_ERRORS = (
     "universal data for rehydration",
     "unable to extract webpage video data",
     "unexpected response from webpage request",
+    "tiktok api keeps sending the same page",
+    "http error 403",
+    "403 forbidden",
+    "challenge",
 )
 
 

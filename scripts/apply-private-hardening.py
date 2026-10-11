@@ -1791,7 +1791,7 @@ def _is_tiktok_url(url: str) -> bool:
         )
 
     text = path.read_text(encoding="utf-8")
-    if "{'format': TIKTOK_TELEGRAM_SAFE_FORMAT" in text:
+    if "{'format': TIKTOK_TELEGRAM_SAFE_FORMAT" in text and "attempts.extend([" in text:
         return
     needle = """        if format_override:
             attempts = [{'format': format_override, 'prefer_ffmpeg': True, 'merge_output_format': user_merge_format}]
@@ -1801,6 +1801,13 @@ def _is_tiktok_url(url: str) -> bool:
 """
     replacement = """        if format_override:
             attempts = [{'format': format_override, 'prefer_ffmpeg': True, 'merge_output_format': user_merge_format}]
+            # Keep saved /format choices, but recover with Telegram-safe formats
+            # when TikTok rejects the choice or returns an incompatible codec.
+            if _is_tiktok_url(original_url) or _is_tiktok_url(url):
+                attempts.extend([
+                    {'format': TIKTOK_TELEGRAM_SAFE_FORMAT, 'prefer_ffmpeg': True, 'merge_output_format': user_merge_format, 'extract_flat': False},
+                    {'format': 'best[vcodec!=none][acodec!=none][ext=mp4]/best', 'prefer_ffmpeg': False, 'extract_flat': False},
+                ])
         else:
             # TikTok may expose high-quality H.265/bytevc1 formats that Telegram
             # plays unreliably. Prefer H.264 + AAC MP4 for bot uploads.
@@ -1813,8 +1820,26 @@ def _is_tiktok_url(url: str) -> bool:
 """
     if replacement not in text:
         if needle not in text:
-            raise RuntimeError(f"Expected TikTok format insertion point not found in {path}")
-        path.write_text(text.replace(needle, replacement, 1), encoding="utf-8")
+            legacy_needle = """        if format_override:
+            attempts = [{'format': format_override, 'prefer_ffmpeg': True, 'merge_output_format': user_merge_format}]
+        else:
+"""
+            legacy_replacement = """        if format_override:
+            attempts = [{'format': format_override, 'prefer_ffmpeg': True, 'merge_output_format': user_merge_format}]
+            # Keep saved /format choices, but recover with Telegram-safe formats
+            # when TikTok rejects the choice or returns an incompatible codec.
+            if _is_tiktok_url(original_url) or _is_tiktok_url(url):
+                attempts.extend([
+                    {'format': TIKTOK_TELEGRAM_SAFE_FORMAT, 'prefer_ffmpeg': True, 'merge_output_format': user_merge_format, 'extract_flat': False},
+                    {'format': 'best[vcodec!=none][acodec!=none][ext=mp4]/best', 'prefer_ffmpeg': False, 'extract_flat': False},
+                ])
+        else:
+"""
+            if legacy_needle not in text:
+                raise RuntimeError(f"Expected TikTok format insertion point not found in {path}")
+            path.write_text(text.replace(legacy_needle, legacy_replacement, 1), encoding="utf-8")
+        else:
+            path.write_text(text.replace(needle, replacement, 1), encoding="utf-8")
 
 
 def patch_x_multi_video_posts() -> None:
