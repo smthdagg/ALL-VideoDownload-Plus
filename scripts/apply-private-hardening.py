@@ -1272,34 +1272,6 @@ def get_clean_playlist_url(url: str) -> str:
         "def get_video_formats(url, user_id=None, playlist_start_index=1, cookies_already_checked=False, use_proxy=False, playlist_end_index=None):\n    url = normalize_douyin_url(url)\n",
     )
 
-    # Keep the per-user-cookie yt-dlp path when the public resolver returns 400/403.
-    yt_hook_text = yt_hook_path.read_text(encoding="utf-8")
-    resolver_failure = (
-        "    if is_douyin_url(url):\n"
-        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"
-    )
-    resolver_fallback = (
-        "    if is_douyin_url(url):\n"
-        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"
-    )
-    if resolver_failure in yt_hook_text:
-        yt_hook_path.write_text(yt_hook_text.replace(resolver_failure, resolver_fallback), encoding="utf-8")
-
-    yt_hook_text = yt_hook_path.read_text(encoding="utf-8")
-    legacy_douyin_failure = (
-        "    if is_douyin_url(url):\n"
-        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; skipping yt-dlp fallback\")\n"
-        "        return {\n"
-        "            \"error\": \"DOUYIN_RESOLVER_UNAVAILABLE\",\n"
-        "            \"original_error\": (\n"
-        "                \"Douyin local sidecar and remote resolver did not return a media URL. \"\n"
-        "                \"Configure DOUYIN_REMOTE_RESOLVER_URL or try another resolver.\"\n"
-        "            ),\n"
-        "        }\n"
-    )
-    if legacy_douyin_failure in yt_hook_text:
-        yt_hook_path.write_text(yt_hook_text.replace(legacy_douyin_failure, "    if is_douyin_url(url):\n        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"), encoding="utf-8")
-
     link_cmd_path = APP / "COMMANDS" / "link_cmd.py"
     link_cmd_text = link_cmd_path.read_text(encoding="utf-8")
     if "from URL_PARSERS.normalizer import normalize_douyin_url\n" not in link_cmd_text:
