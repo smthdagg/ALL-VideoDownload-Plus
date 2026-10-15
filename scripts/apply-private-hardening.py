@@ -1272,6 +1272,34 @@ def get_clean_playlist_url(url: str) -> str:
         "def get_video_formats(url, user_id=None, playlist_start_index=1, cookies_already_checked=False, use_proxy=False, playlist_end_index=None):\n    url = normalize_douyin_url(url)\n",
     )
 
+    # Keep the per-user-cookie yt-dlp path when the public resolver returns 400/403.
+    yt_hook_text = yt_hook_path.read_text(encoding="utf-8")
+    resolver_failure = (
+        "    if is_douyin_url(url):\n"
+        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"
+    )
+    resolver_fallback = (
+        "    if is_douyin_url(url):\n"
+        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"
+    )
+    if resolver_failure in yt_hook_text:
+        yt_hook_path.write_text(yt_hook_text.replace(resolver_failure, resolver_fallback), encoding="utf-8")
+
+    yt_hook_text = yt_hook_path.read_text(encoding="utf-8")
+    legacy_douyin_failure = (
+        "    if is_douyin_url(url):\n"
+        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; skipping yt-dlp fallback\")\n"
+        "        return {\n"
+        "            \"error\": \"DOUYIN_RESOLVER_UNAVAILABLE\",\n"
+        "            \"original_error\": (\n"
+        "                \"Douyin local sidecar and remote resolver did not return a media URL. \"\n"
+        "                \"Configure DOUYIN_REMOTE_RESOLVER_URL or try another resolver.\"\n"
+        "            ),\n"
+        "        }\n"
+    )
+    if legacy_douyin_failure in yt_hook_text:
+        yt_hook_path.write_text(yt_hook_text.replace(legacy_douyin_failure, "    if is_douyin_url(url):\n        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"), encoding="utf-8")
+
     link_cmd_path = APP / "COMMANDS" / "link_cmd.py"
     link_cmd_text = link_cmd_path.read_text(encoding="utf-8")
     if "from URL_PARSERS.normalizer import normalize_douyin_url\n" not in link_cmd_text:
@@ -1436,7 +1464,7 @@ def fetch_douyin_video(url: str) -> dict | None:
     replace_once(
         yt_hook_path,
         "def get_video_formats(url, user_id=None, playlist_start_index=1, cookies_already_checked=False, use_proxy=False, playlist_end_index=None):\n    url = normalize_douyin_url(url)\n",
-        "def get_video_formats(url, user_id=None, playlist_start_index=1, cookies_already_checked=False, use_proxy=False, playlist_end_index=None):\n    url = normalize_douyin_url(url)\n    douyin_info = fetch_douyin_video(url)\n    if douyin_info:\n        logger.info(f\"Douyin API returned metadata for {url}\")\n        return douyin_info\n    if is_douyin_url(url):\n        logger.warning(f\"Douyin resolver did not return media metadata for {url}; skipping yt-dlp fallback\")\n        return {\n            \"error\": \"DOUYIN_RESOLVER_UNAVAILABLE\",\n            \"original_error\": (\n                \"Douyin local sidecar and remote resolver did not return a media URL. \"\n                \"Configure DOUYIN_REMOTE_RESOLVER_URL or try another resolver.\"\n            ),\n        }\n",
+        "def get_video_formats(url, user_id=None, playlist_start_index=1, cookies_already_checked=False, use_proxy=False, playlist_end_index=None):\n    url = normalize_douyin_url(url)\n    douyin_info = fetch_douyin_video(url)\n    if douyin_info:\n        logger.info(f\"Douyin API returned metadata for {url}\")\n        return douyin_info\n    if is_douyin_url(url):\n        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n",
     )
 
     link_cmd_path = APP / "COMMANDS" / "link_cmd.py"
@@ -1450,6 +1478,21 @@ def fetch_douyin_video(url: str) -> dict | None:
         "def get_direct_link(url, user_id, quality_arg=None, cookies_already_checked=False, use_proxy=False):\n    url = normalize_douyin_url(url)\n",
         "def get_direct_link(url, user_id, quality_arg=None, cookies_already_checked=False, use_proxy=False):\n    url = normalize_douyin_url(url)\n    douyin_info = fetch_douyin_video(url)\n    if douyin_info:\n        video_url = douyin_info.get(\"url\")\n        return {\n            \"success\": True,\n            \"title\": douyin_info.get(\"title\", \"Douyin video\"),\n            \"duration\": douyin_info.get(\"duration\", 0),\n            \"video_url\": video_url,\n            \"audio_url\": None,\n            \"format\": \"douyin-api\",\n            \"player_urls\": [video_url] if video_url else [],\n        }\n",
     )
+
+    yt_hook_text = yt_hook_path.read_text(encoding="utf-8")
+    legacy_douyin_failure = (
+        "    if is_douyin_url(url):\n"
+        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; skipping yt-dlp fallback\")\n"
+        "        return {\n"
+        "            \"error\": \"DOUYIN_RESOLVER_UNAVAILABLE\",\n"
+        "            \"original_error\": (\n"
+        "                \"Douyin local sidecar and remote resolver did not return a media URL. \"\n"
+        "                \"Configure DOUYIN_REMOTE_RESOLVER_URL or try another resolver.\"\n"
+        "            ),\n"
+        "        }\n"
+    )
+    if legacy_douyin_failure in yt_hook_text:
+        yt_hook_path.write_text(yt_hook_text.replace(legacy_douyin_failure, "    if is_douyin_url(url):\n        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"), encoding="utf-8")
 
     down_and_up_path = APP / "DOWN_AND_UP" / "down_and_up.py"
     replace_once(

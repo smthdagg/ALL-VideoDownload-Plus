@@ -72,6 +72,11 @@ class AdminManagementContractTest(unittest.TestCase):
         self.assertIn("TIKTOK_TELEGRAM_SAFE_FORMAT", patch)
         self.assertIn("if _is_tiktok_url(original_url) or _is_tiktok_url(url):", patch)
 
+    def test_douyin_resolver_failure_keeps_cookie_fallback(self):
+        patch = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")
+        self.assertIn("using yt-dlp with the user's cookie", patch)
+        self.assertIn("per-user-cookie yt-dlp path", patch)
+
     def test_docker_build_excludes_private_runtime_data(self):
         patch = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")
         dockerignore = (ROOT / "scripts/templates/dockerignore").read_text(encoding="utf-8")
