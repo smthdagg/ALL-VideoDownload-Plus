@@ -2055,6 +2055,66 @@ def patch_reply_keyboard_messages() -> None:
     path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
 
 
+def patch_bounded_cookie_fallback() -> None:
+    source = ROOT / "scripts" / "templates" / "cookie_fallback_guard.py"
+    (APP / "HELPERS" / "cookie_fallback_guard.py").write_text(source.read_text(), encoding="utf-8")
+    path = APP / "COMMANDS" / "cookies_cmd.py"
+    text = path.read_text(encoding="utf-8")
+    tree = ast.parse(text)
+    node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "try_non_youtube_cookie_fallback")
+    if not any(isinstance(d, ast.Name) and d.id == "bounded_cookie_fallback" for d in node.decorator_list):
+        lines = text.splitlines(keepends=True)
+        body = "".join(lines[node.lineno - 1:node.end_lineno])
+        for cookie_path in ("user_cookie_path", "temp_cookie_path", "global_cookie_path", "None"):
+            old = "result = download_func(*args)"
+            if old not in body:
+                raise RuntimeError("Cookie fallback source layout changed")
+            body = body.replace(old, f"result = call_with_cookie_source(download_func, args, {cookie_path})", 1)
+        lines[node.lineno - 1:node.end_lineno] = ["from HELPERS.cookie_fallback_guard import bounded_cookie_fallback, call_with_cookie_source\n\n@bounded_cookie_fallback\n" + body]
+        path.write_text("".join(lines), encoding="utf-8")
+
+
+def patch_single_douyin_probe() -> None:
+    path = APP / "DOWN_AND_UP" / "yt_dlp_hook.py"
+    text = path.read_text(encoding="utf-8")
+    block = (
+        "    douyin_info = fetch_douyin_video(url)\n"
+        "    if douyin_info:\n"
+        "        logger.info(f\"Douyin API returned metadata for {url}\")\n"
+        "        return douyin_info\n"
+        "    if is_douyin_url(url):\n"
+        "        logger.warning(f\"Douyin resolver did not return media metadata for {url}; using yt-dlp with the user's cookie\")\n"
+    )
+    text = text.replace(block, "").replace(block.replace("fetch_douyin_video(url)", "fetch_douyin_video(url, user_id=user_id)"), "")
+    marker = "def get_video_formats(url, user_id=None, playlist_start_index=1, cookies_already_checked=False, use_proxy=False, playlist_end_index=None):\n    url = normalize_douyin_url(url)\n"
+    if marker not in text:
+        raise RuntimeError("Douyin format-probe insertion point changed")
+    block = block.replace("fetch_douyin_video(url)", "fetch_douyin_video(url, user_id=user_id)")
+    path.write_text(text.replace(marker, marker + block, 1), encoding="utf-8")
+    for other in (APP / "COMMANDS" / "link_cmd.py", APP / "DOWN_AND_UP" / "down_and_up.py"):
+        content = other.read_text(encoding="utf-8")
+        if other.name == "link_cmd.py":
+            link_block = '''    douyin_info = fetch_douyin_video(url)
+    if douyin_info:
+        video_url = douyin_info.get("url")
+        return {
+            "success": True,
+            "title": douyin_info.get("title", "Douyin video"),
+            "duration": douyin_info.get("duration", 0),
+            "video_url": video_url,
+            "audio_url": None,
+            "format": "douyin-api",
+            "player_urls": [video_url] if video_url else [],
+        }
+'''
+            content = content.replace(link_block, "").replace(link_block.replace("fetch_douyin_video(url)", "fetch_douyin_video(url, user_id=user_id)"), "")
+            link_marker = "def get_direct_link(url, user_id, quality_arg=None, cookies_already_checked=False, use_proxy=False):\n    url = normalize_douyin_url(url)\n"
+            if link_marker not in content:
+                raise RuntimeError("Douyin direct-link insertion point changed")
+            content = content.replace(link_marker, link_marker + link_block, 1)
+        other.write_text(content.replace("fetch_douyin_video(url)", "fetch_douyin_video(url, user_id=user_id)"), encoding="utf-8")
+
+
 def main() -> None:
     install_platform_runtime()
     install_douyin_public_api()
@@ -2085,6 +2145,8 @@ def main() -> None:
     patch_x_multi_video_posts()
     patch_x_multi_video_format_probe()
     patch_reply_keyboard_messages()
+    patch_bounded_cookie_fallback()
+    patch_single_douyin_probe()
     print("Private hardening applied.")
 
 

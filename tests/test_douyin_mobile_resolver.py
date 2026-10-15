@@ -34,6 +34,33 @@ def load_douyin_api_module():
 
 
 class DouyinMobileResolverTest(unittest.TestCase):
+    def test_mobile_resolver_passes_domain_scoped_user_cookie_jar(self):
+        module = load_douyin_api_module()
+        import tempfile
+        import http.cookiejar
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            cookie_path = Path(td) / "cookie.txt"
+            cookie_path.write_text("# Netscape HTTP Cookie File\n.douyin.com\tTRUE\t/\tFALSE\t2147483647\tsessionid\tPERSONAL\n")
+            response = Mock(url="https://www.iesdouyin.com/share/video/123")
+            response.text = '<script>window._ROUTER_DATA = {"loaderData":{}}</script>'
+            module.requests.get = Mock(return_value=response)
+            before = cookie_path.read_bytes()
+            module._fetch_mobile_share_page("https://www.douyin.com/video/123", cookie_path=cookie_path)
+            sent = module.requests.get.call_args_list[0].kwargs['cookies']
+            self.assertIsInstance(sent, http.cookiejar.MozillaCookieJar)
+            self.assertEqual(next(iter(sent)).domain, '.douyin.com')
+            self.assertEqual(cookie_path.read_bytes(), before)
+
+    def test_personalized_mobile_path_is_tried_before_anonymous_resolver(self):
+        module = load_douyin_api_module()
+        from unittest.mock import patch
+        module._fetch_mobile_share_page = Mock(return_value={'id':'123','url':'https://media.example/video.mp4'})
+        with patch.object(module, '_user_cookie_path', return_value=Path('/fixture/cookie.txt')):
+            result = module.fetch_douyin_video('https://www.douyin.com/video/123', user_id=123)
+        self.assertEqual(result['id'], '123')
+        module._fetch_mobile_share_page.assert_called_once_with('https://www.douyin.com/video/123', cookie_path=Path('/fixture/cookie.txt'))
+
     def test_fetches_no_watermark_link_from_iesdouyin_router_data(self):
         module = load_douyin_api_module()
         module.DOUYIN_PUBLIC_API_TOKEN_ENABLED = False
@@ -76,6 +103,8 @@ class DouyinMobileResolverTest(unittest.TestCase):
         self.assertEqual(result["id"], "7629342687200274425")
         self.assertEqual(result["title"], "sample title")
         self.assertEqual(result["formats"][0]["format_id"], "douyin-mobile")
+        self.assertNotIn("requested_formats", result)
+        self.assertAlmostEqual(result["duration"], 1.234)
         self.assertIn("/play/?", result["url"])
         self.assertNotIn("playwm", result["url"])
 

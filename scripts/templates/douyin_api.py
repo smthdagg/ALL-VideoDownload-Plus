@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import http.cookiejar
 import os
 import re
 import time
@@ -183,7 +184,6 @@ def _as_ytdlp_info(source_url: str, data: dict, direct_url: str, source: str = "
         "duration": duration,
         "thumbnail": _first_cover(data.get("cover_data") or data.get("cover") or {}),
         "formats": [video_format],
-        "requested_formats": [video_format],
     }
     return {key: value for key, value in info.items() if value is not None}
 
@@ -253,10 +253,21 @@ def _pick_mobile_video_url(item: dict) -> str | None:
     return None
 
 
-def _fetch_mobile_share_page(source_url: str) -> dict | None:
+def _fetch_mobile_share_page(source_url: str, cookie_path: Path | None = None) -> dict | None:
     first_url = _extract_first_url(source_url) or source_url
+    cookie_options = {}
+    if cookie_path is not None:
+        jar = http.cookiejar.MozillaCookieJar(str(cookie_path))
+        try:
+            jar.load(ignore_discard=True, ignore_expires=False)
+        except (OSError, http.cookiejar.LoadError):
+            logger.warning("Douyin mobile resolver could not load the user's cookie jar")
+            return None
+        # Retain cookie domain/path/expiry boundaries. Requests updates only its
+        # in-memory copy; the uploaded personalized jar is never saved here.
+        cookie_options['cookies'] = jar
     try:
-        response = requests.get(first_url, headers=DOUYIN_MOBILE_HEADERS, allow_redirects=True, timeout=DOUYIN_API_TIMEOUT)
+        response = requests.get(first_url, headers=DOUYIN_MOBILE_HEADERS, allow_redirects=True, timeout=DOUYIN_API_TIMEOUT, **cookie_options)
         response.raise_for_status()
     except Exception as exc:
         logger.warning(f"Douyin mobile resolver could not resolve share URL {source_url}: {exc}")
@@ -269,7 +280,7 @@ def _fetch_mobile_share_page(source_url: str) -> dict | None:
 
     page_url = f"https://www.iesdouyin.com/share/video/{aweme_id}"
     try:
-        page_response = requests.get(page_url, headers=DOUYIN_MOBILE_HEADERS, timeout=DOUYIN_API_TIMEOUT)
+        page_response = requests.get(page_url, headers=DOUYIN_MOBILE_HEADERS, timeout=DOUYIN_API_TIMEOUT, **cookie_options)
         page_response.raise_for_status()
     except Exception as exc:
         logger.warning(f"Douyin mobile resolver could not fetch {page_url}: {exc}")
@@ -294,7 +305,7 @@ def _fetch_mobile_share_page(source_url: str) -> dict | None:
         "video_id": aweme_id,
         "aweme_id": aweme_id,
         "desc": item.get("desc"),
-        "duration": (item.get("video") or {}).get("duration"),
+        "duration": ((item.get("video") or {}).get("duration") or 0) / 1000,
         "cover_data": item.get("video") or {},
         "mobile_item": item,
     }
@@ -501,7 +512,17 @@ def _fetch_reqable_capture(source_url: str) -> dict | None:
     return None
 
 
-def fetch_douyin_video(url: str) -> dict | None:
+def _user_cookie_path(user_id) -> Path | None:
+    if user_id is None:
+        return None
+    try:
+        path = Path('users') / str(int(user_id)) / 'cookie.txt'
+    except (TypeError, ValueError):
+        return None
+    return path if path.is_file() else None
+
+
+def fetch_douyin_video(url: str, user_id=None) -> dict | None:
     if not is_douyin_url(url):
         return None
 
@@ -509,6 +530,12 @@ def fetch_douyin_video(url: str) -> dict | None:
     if not is_douyin_url(source_url):
         logger.warning(f"Douyin API rejected non-Douyin URL after normalization: {source_url}")
         return None
+
+    cookie_path = _user_cookie_path(user_id)
+    if cookie_path is not None:
+        personalized = _fetch_mobile_share_page(source_url, cookie_path=cookie_path)
+        if personalized:
+            return personalized
 
     if DOUYIN_REQABLE_CAPTURE_ENABLED and DOUYIN_REQABLE_CAPTURE_FIRST:
         return _fetch_reqable_capture(source_url) or _fetch_local_sidecar(source_url) or _fetch_remote_resolver(source_url)
