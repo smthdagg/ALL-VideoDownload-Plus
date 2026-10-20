@@ -42,7 +42,7 @@ class AdminManagementContractTest(unittest.TestCase):
         patch = (ROOT / "scripts/apply-private-hardening.py").read_text(encoding="utf-8")
         self.assertIn("FROM python:3.12-slim", patch)
         self.assertIn("brainicism/bgutil-ytdlp-pot-provider:1.3.2", patch)
-        self.assertIn('      - "80:80"', patch)
+        self.assertIn('os.getenv("VPS_DASHBOARD_HTTP_BINDING", "80:80")', patch)
         self.assertIn('      - "8443:443"', patch)
         self.assertIn("bgutil-ytdlp-pot-provider==1.3.2", patch)
         self.assertIn("yt-dlp[default,curl-cffi]==2026.8.19", patch)

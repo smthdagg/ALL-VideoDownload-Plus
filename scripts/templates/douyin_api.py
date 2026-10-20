@@ -3,10 +3,13 @@ from __future__ import annotations
 import json
 import http.cookiejar
 import os
+import random
 import re
+import string
 import time
 from pathlib import Path
 from urllib.parse import quote, urlparse
+from urllib.request import Request as _UrlRequest, urlopen as _UrlOpen
 
 import requests
 
@@ -253,21 +256,129 @@ def _pick_mobile_video_url(item: dict) -> str | None:
     return None
 
 
-def _fetch_mobile_share_page(source_url: str, cookie_path: Path | None = None) -> dict | None:
-    first_url = _extract_first_url(source_url) or source_url
-    cookie_options = {}
+DOUYIN_TTWID_ENDPOINT = "https://ttwid.bytedance.com/ttwid/union/register/"
+DOUYIN_TTWID_PAYLOAD = {
+    "region": "cn",
+    "aid": 6383,
+    "needFid": False,
+    "service": "www.ixigua.com",
+    "migrate_info": {"ticket": "", "source": "node"},
+    "cbUrlProtocol": "https",
+    "union": True,
+}
+DOUYIN_TTWID_TTL_SECONDS = 6 * 3600
+DOUYIN_MOBILE_PROXY_URL = os.getenv("DOUYIN_MOBILE_PROXY_URL", "").strip()
+_anonymous_cookie_cache: dict = {}
+
+
+def _generate_verify_fp() -> str:
+    # Mirrors the s_v_web_id / verifyFp shape Douyin's web SDK issues locally;
+    # the server accepts these self-generated device tokens on share pages.
+    base_str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    milliseconds = int(round(time.time() * 1000))
+    base36 = ""
+    while milliseconds > 0:
+        remainder = milliseconds % 36
+        if remainder < 10:
+            base36 = str(remainder) + base36
+        else:
+            base36 = chr(ord("a") + remainder - 10) + base36
+        milliseconds = int(milliseconds / 36)
+    segments = [""] * 36
+    segments[8] = segments[13] = segments[18] = segments[23] = "_"
+    segments[14] = "4"
+    for index in range(36):
+        if not segments[index]:
+            choice = int(random.random() * len(base_str))
+            if index == 19:
+                choice = 3 & choice | 8
+            segments[index] = base_str[choice]
+    return "verify_" + base36 + "_" + "".join(segments)
+
+
+def _mint_ttwid() -> str | None:
+    cached = _anonymous_cookie_cache.get("ttwid")
+    minted_at = _anonymous_cookie_cache.get("minted_at", 0)
+    if cached and time.time() - minted_at < DOUYIN_TTWID_TTL_SECONDS:
+        return cached
+    try:
+        request = _UrlRequest(
+            DOUYIN_TTWID_ENDPOINT,
+            data=json.dumps(DOUYIN_TTWID_PAYLOAD).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        with _UrlOpen(request, timeout=15) as response:
+            for header, value in response.headers.items():
+                if header.lower() == "set-cookie" and "ttwid=" in value:
+                    ttwid = value.split("ttwid=", 1)[1].split(";", 1)[0]
+                    if ttwid:
+                        _anonymous_cookie_cache["ttwid"] = ttwid
+                        _anonymous_cookie_cache["minted_at"] = time.time()
+                        return ttwid
+    except Exception as exc:
+        logger.warning(f"Douyin mobile resolver could not mint an anonymous ttwid: {exc}")
+    return None
+
+
+def _anonymous_cookie_pairs() -> list[tuple[str, str]]:
+    pairs = []
+    ttwid = _mint_ttwid()
+    if ttwid:
+        pairs.append(("ttwid", ttwid))
+    pairs.append(("s_v_web_id", _generate_verify_fp()))
+    pairs.append(("msToken", "".join(random.choices(string.ascii_letters + string.digits, k=116))))
+    return pairs
+
+
+def _build_mobile_cookie_header(cookie_path: Path | None = None) -> str:
+    # The share page lives on iesdouyin.com while uploaded jars carry douyin.com
+    # cookies, so requests' domain matching would drop them all. Send an
+    # explicit header instead: uploaded cookies first, anonymous device tokens
+    # filling the gaps. Nothing is ever written back to disk here.
+    pairs: list[tuple[str, str]] = []
+    seen: set[str] = set()
     if cookie_path is not None:
         jar = http.cookiejar.MozillaCookieJar(str(cookie_path))
         try:
             jar.load(ignore_discard=True, ignore_expires=False)
         except (OSError, http.cookiejar.LoadError):
-            logger.warning("Douyin mobile resolver could not load the user's cookie jar")
-            return None
-        # Retain cookie domain/path/expiry boundaries. Requests updates only its
-        # in-memory copy; the uploaded personalized jar is never saved here.
-        cookie_options['cookies'] = jar
+            logger.warning("Douyin mobile resolver could not load the uploaded cookie jar")
+        else:
+            for cookie in jar:
+                if cookie.name and cookie.value and cookie.name not in seen:
+                    pairs.append((cookie.name, cookie.value))
+                    seen.add(cookie.name)
+    if "ttwid" not in seen:
+        for name, value in _anonymous_cookie_pairs():
+            if name not in seen:
+                pairs.append((name, value))
+                seen.add(name)
+    return "; ".join(f"{name}={value}" for name, value in pairs)
+
+
+def _mobile_request_headers(cookie_path: Path | None = None) -> dict:
+    headers = dict(DOUYIN_MOBILE_HEADERS)
+    cookie_header = _build_mobile_cookie_header(cookie_path)
+    if cookie_header:
+        headers["Cookie"] = cookie_header
+    return headers
+
+
+def _mobile_request_proxies() -> dict | None:
+    if DOUYIN_MOBILE_PROXY_URL:
+        return {"http": DOUYIN_MOBILE_PROXY_URL, "https": DOUYIN_MOBILE_PROXY_URL}
+    return None
+
+
+def _fetch_mobile_share_page(source_url: str, cookie_path: Path | None = None) -> dict | None:
+    first_url = _extract_first_url(source_url) or source_url
+    request_headers = _mobile_request_headers(cookie_path)
+    proxies = _mobile_request_proxies()
+    request_options = {"headers": request_headers, "timeout": DOUYIN_API_TIMEOUT, "allow_redirects": True}
+    if proxies:
+        request_options["proxies"] = proxies
     try:
-        response = requests.get(first_url, headers=DOUYIN_MOBILE_HEADERS, allow_redirects=True, timeout=DOUYIN_API_TIMEOUT, **cookie_options)
+        response = requests.get(first_url, **request_options)
         response.raise_for_status()
     except Exception as exc:
         logger.warning(f"Douyin mobile resolver could not resolve share URL {source_url}: {exc}")
@@ -279,8 +390,10 @@ def _fetch_mobile_share_page(source_url: str, cookie_path: Path | None = None) -
         return None
 
     page_url = f"https://www.iesdouyin.com/share/video/{aweme_id}"
+    page_options = dict(request_options)
+    page_options.pop("allow_redirects", None)
     try:
-        page_response = requests.get(page_url, headers=DOUYIN_MOBILE_HEADERS, timeout=DOUYIN_API_TIMEOUT, **cookie_options)
+        page_response = requests.get(page_url, **page_options)
         page_response.raise_for_status()
     except Exception as exc:
         logger.warning(f"Douyin mobile resolver could not fetch {page_url}: {exc}")
@@ -522,6 +635,11 @@ def _user_cookie_path(user_id) -> Path | None:
     return path if path.is_file() else None
 
 
+def _global_cookie_path() -> Path | None:
+    path = Path(os.getenv("DOUYIN_GLOBAL_COOKIE_PATH", "TXT/cookie.txt"))
+    return path if path.is_file() else None
+
+
 def fetch_douyin_video(url: str, user_id=None) -> dict | None:
     if not is_douyin_url(url):
         return None
@@ -536,6 +654,15 @@ def fetch_douyin_video(url: str, user_id=None) -> dict | None:
         personalized = _fetch_mobile_share_page(source_url, cookie_path=cookie_path)
         if personalized:
             return personalized
+
+    # Signed web endpoints keep returning 403, so the mobile share page with a
+    # fresh cookie is the working path. Users without an uploaded jar reuse the
+    # shared global cookie before the cookie-less anonymous attempt.
+    global_cookie_path = _global_cookie_path()
+    if global_cookie_path is not None and global_cookie_path != cookie_path:
+        shared = _fetch_mobile_share_page(source_url, cookie_path=global_cookie_path)
+        if shared:
+            return shared
 
     if DOUYIN_REQABLE_CAPTURE_ENABLED and DOUYIN_REQABLE_CAPTURE_FIRST:
         return _fetch_reqable_capture(source_url) or _fetch_local_sidecar(source_url) or _fetch_remote_resolver(source_url)

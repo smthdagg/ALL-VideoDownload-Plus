@@ -30,14 +30,16 @@ def load_douyin_api_module():
     spec = importlib.util.spec_from_file_location("douyin_api_under_test", MODULE_PATH)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    module._mint_ttwid_original = module._mint_ttwid
+    module._mint_ttwid = lambda: "TTWID-FIXTURE"
+    module._anonymous_cookie_cache.clear()
     return module
 
 
 class DouyinMobileResolverTest(unittest.TestCase):
-    def test_mobile_resolver_passes_domain_scoped_user_cookie_jar(self):
+    def test_mobile_resolver_sends_uploaded_cookie_and_anonymous_tokens_in_header(self):
         module = load_douyin_api_module()
         import tempfile
-        import http.cookiejar
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
             cookie_path = Path(td) / "cookie.txt"
@@ -46,11 +48,82 @@ class DouyinMobileResolverTest(unittest.TestCase):
             response.text = '<script>window._ROUTER_DATA = {"loaderData":{}}</script>'
             module.requests.get = Mock(return_value=response)
             before = cookie_path.read_bytes()
-            module._fetch_mobile_share_page("https://www.douyin.com/video/123", cookie_path=cookie_path)
-            sent = module.requests.get.call_args_list[0].kwargs['cookies']
-            self.assertIsInstance(sent, http.cookiejar.MozillaCookieJar)
-            self.assertEqual(next(iter(sent)).domain, '.douyin.com')
+            with patch.object(module, "_generate_verify_fp", return_value="verify_fixture_fixed_token"):
+                module._fetch_mobile_share_page("https://www.douyin.com/video/123", cookie_path=cookie_path)
+            sent = module.requests.get.call_args_list[0].kwargs['headers']['Cookie']
+            self.assertIn("sessionid=PERSONAL", sent)
+            self.assertIn("ttwid=TTWID-FIXTURE", sent)
+            self.assertIn("s_v_web_id=verify_fixture_fixed_token", sent)
+            self.assertIn("msToken=", sent)
             self.assertEqual(cookie_path.read_bytes(), before)
+
+    def test_anonymous_tokens_fill_gaps_when_no_cookie_uploaded(self):
+        module = load_douyin_api_module()
+        from unittest.mock import patch
+        response = Mock(url="https://www.iesdouyin.com/share/video/123")
+        response.text = '<script>window._ROUTER_DATA = {"loaderData":{}}</script>'
+        module.requests.get = Mock(return_value=response)
+        with patch.object(module, "_generate_verify_fp", return_value="verify_anon_token"):
+            module._fetch_mobile_share_page("https://www.douyin.com/video/123")
+        sent = module.requests.get.call_args_list[0].kwargs['headers']['Cookie']
+        self.assertIn("ttwid=TTWID-FIXTURE", sent)
+        self.assertIn("s_v_web_id=verify_anon_token", sent)
+        self.assertNotIn("sessionid", sent)
+
+    def test_mobile_proxy_env_is_applied_to_requests(self):
+        module = load_douyin_api_module()
+        from unittest.mock import patch
+        response = Mock(url="https://www.iesdouyin.com/share/video/123")
+        response.text = '<script>window._ROUTER_DATA = {"loaderData":{}}</script>'
+        module.requests.get = Mock(return_value=response)
+        module.DOUYIN_MOBILE_PROXY_URL = "http://proxy.example:8888"
+        try:
+            module._fetch_mobile_share_page("https://www.douyin.com/video/123")
+        finally:
+            module.DOUYIN_MOBILE_PROXY_URL = ""
+        proxies = module.requests.get.call_args_list[0].kwargs['proxies']
+        self.assertEqual(proxies, {"http": "http://proxy.example:8888", "https": "http://proxy.example:8888"})
+
+    def test_generate_verify_fp_matches_douyin_shape(self):
+        module = load_douyin_api_module()
+        value = module._generate_verify_fp()
+        self.assertTrue(value.startswith("verify_"))
+        # verify_<base36 ms>_<36-char device id with "_" at 8/13/18/23 and "4" at 14>
+        device = value[-36:]
+        self.assertEqual(device[8], "_")
+        self.assertEqual(device[13], "_")
+        self.assertEqual(device[18], "_")
+        self.assertEqual(device[23], "_")
+        self.assertEqual(device[14], "4")
+        middle = value[len("verify_"):-36].rstrip("_")
+        self.assertTrue(middle)
+
+    def test_mint_ttwid_parses_set_cookie_header(self):
+        module = load_douyin_api_module()
+        module._anonymous_cookie_cache.clear()
+        from unittest.mock import patch
+
+        class FakeHeaders:
+            def __init__(self):
+                self._items = [("set-cookie", "ttwid=1%7CMINTED%7C123; Path=/; Domain=bytedance.com")]
+
+            def items(self):
+                return self._items
+
+        class FakeResponse:
+            headers = FakeHeaders()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        with patch.object(module, "_UrlOpen", return_value=FakeResponse()), \
+                patch.object(module, "_UrlRequest", Mock()):
+            ttwid = module._mint_ttwid_original()
+        self.assertEqual(ttwid, "1%7CMINTED%7C123")
+        self.assertEqual(module._anonymous_cookie_cache["ttwid"], "1%7CMINTED%7C123")
 
     def test_personalized_mobile_path_is_tried_before_anonymous_resolver(self):
         module = load_douyin_api_module()

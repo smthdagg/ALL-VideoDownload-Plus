@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 from pathlib import Path
 
@@ -1102,25 +1103,38 @@ def patch_compose() -> None:
     image: caddy:2-alpine
 """,
     )
-    replace_once(
-        path,
-        """  configuration-webserver:
+    # Deployments may rebind the dashboard HTTP host port after generation
+    # (e.g. "127.0.0.1:8880:80" when host port 80 is taken). Re-running the
+    # generator must not crash on that drift: normalize whatever ports block
+    # is present and re-apply it with the deployment's binding.
+    binding = os.getenv("VPS_DASHBOARD_HTTP_BINDING", "80:80").strip().strip('"') or "80:80"
+    text = path.read_text(encoding="utf-8")
+    caddy_header = """  configuration-webserver:
     image: caddy:2-alpine
     restart: unless-stopped
     logging: *default-logging
-    cap_add:
-""",
-        """  configuration-webserver:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    logging: *default-logging
-    ports:
-      - "80:80"
-      - "8443:443"
-      - "8443:443/udp"
-    cap_add:
-""",
+"""
+    caddy_ports = (
+        "    ports:\n"
+        f'      - "{binding}"\n'
+        '      - "8443:443"\n'
+        '      - "8443:443/udp"\n'
     )
+    if caddy_header + caddy_ports not in text:
+        normalized = re.sub(
+            re.escape(caddy_header) + r"    ports:\n(?:      - \"[^\"]+\"\n)+",
+            caddy_header,
+            text,
+            count=1,
+        )
+        normalized = normalized.replace(
+            caddy_header + "    cap_add:\n",
+            caddy_header + caddy_ports + "    cap_add:\n",
+            1,
+        )
+        if normalized == text:
+            raise RuntimeError(f"Expected configuration-webserver block not found in {path}")
+        path.write_text(normalized, encoding="utf-8")
 
 
 def patch_dockerfile() -> None:
