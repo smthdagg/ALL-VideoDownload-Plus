@@ -34,10 +34,10 @@
 
 ## 部署出口（VPS 运行时，不含在仓库）
 
-- 干净出口：另一台自有 VPS 上运行无依赖 Python CONNECT 转发代理（`/usr/local/bin/douyin_forward_proxy.py`，systemd `douyin-proxy.service`，端口 8888，仅允许视频 VPS 出口 IP 访问）。
-- 视频 VPS：systemd `douyin-proxy-tunnel.service` 经 SSH 本地转发 `172.18.0.1:8888 → 干净 VPS 127.0.0.1:8888`（专用密钥，authorized_keys 带 `from=` 出口 IP 限制）。
-- 视频 VPS 宿主 ufw 增加一条：允许 docker 子网 `172.18.0.0/16` 访问 8888（容器经网桥网关使用隧道）。
-- app 的 `.env` 设置 `DOUYIN_MOBILE_PROXY_URL=http://172.18.0.1:8888`。端口如被安全组/隧道变化影响，仅需改该值并重启 app。
+- 干净出口：另一台自有 VPS 上运行无依赖 Python CONNECT 转发代理（`/usr/local/bin/douyin_forward_proxy.py`，systemd `douyin-proxy.service`，端口 8888，allowlist 限定视频 VPS 出口 IP）。
+- 视频 VPS：安全组白名单放行后**直连**干净出口，app 的 `.env` 设置 `DOUYIN_MOBILE_PROXY_URL=http://<干净出口IP>:8888`。
+- 备用路径（已停用保留）：systemd `douyin-proxy-tunnel.service` 经 SSH 本地转发 `<docker网关>:8888 → 干净 VPS 127.0.0.1:8888`（专用密钥，authorized_keys 带 `from=` 出口 IP 限制），宿主 ufw 放行 docker 子网访问 8888；白名单失效时重新启用并把 `.env` 改回网关地址。
+- 端口或出口 IP 变化时，仅需改 `.env` 与干净出口侧 allowlist/白名单并重启 app。
 
 ## 验证
 
