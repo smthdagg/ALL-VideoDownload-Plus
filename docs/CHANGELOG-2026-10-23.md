@@ -77,8 +77,8 @@
   `bootstrap-upstream.sh` 末尾已挂钩。
 - 本日入库：`0001-proxy-helper-empty-ip-guard.patch`（空 IP 代理防御）、
   `yt_dlp_plugins/extractor/xhs_share.py`（小红书插件）。
-- 实例侧其余定制（仪表盘、私有用户体系、抖音 API 等）暂以
-  `docker compose stop` 状态保存在部署机，全量快照待单独脱敏审查后归档。
+- 实例侧其余定制（仪表盘、私有用户体系、抖音 API 等）已全量快照归档至
+  `patches/tg-ytdlp-bot/fork-state-20261023/`（脱敏：config/cookie/密钥/运行时状态排除）。
 
 ## 已知限制
 
