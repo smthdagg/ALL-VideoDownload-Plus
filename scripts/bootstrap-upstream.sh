@@ -24,3 +24,8 @@ else
 fi
 
 echo "Upstream ready at $UPSTREAM_DIR"
+
+# Re-apply project-local modifications after (re)bootstrap.
+if [ -x "$ROOT_DIR/scripts/apply-local-patches.sh" ]; then
+  "$ROOT_DIR/scripts/apply-local-patches.sh"
+fi

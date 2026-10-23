@@ -1,0 +1,14 @@
+diff --git a/HELPERS/proxy_helper.py b/HELPERS/proxy_helper.py
+index 237d71f..fb6e717 100644
+--- a/HELPERS/proxy_helper.py
++++ b/HELPERS/proxy_helper.py
+@@ -129,6 +129,9 @@ def build_proxy_url(proxy_config):
+     """Build proxy URL from configuration"""
+     if not proxy_config or 'type' not in proxy_config or 'ip' not in proxy_config or 'port' not in proxy_config:
+         return None
++    # 空 IP = 未配置代理, 必须直连（此前拼出 http://:PORT 畸形代理导致域名单代理通道全灭）
++    if not proxy_config.get('ip'):
++        return None
+     
+     if proxy_config['type'] == 'http':
+         if proxy_config.get('user') and proxy_config.get('password'):
