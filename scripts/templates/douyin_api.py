@@ -23,6 +23,9 @@ DOUYIN_API_TIMEOUT = int(os.getenv("DOUYIN_API_TIMEOUT", "35"))
 DOUYIN_REMOTE_RESOLVER_URL = os.getenv("DOUYIN_REMOTE_RESOLVER_URL", "").strip()
 DOUYIN_REMOTE_RESOLVER_METHOD = os.getenv("DOUYIN_REMOTE_RESOLVER_METHOD", "GET").upper()
 DOUYIN_REMOTE_RESOLVER_HEADERS_JSON = os.getenv("DOUYIN_REMOTE_RESOLVER_HEADERS_JSON", "").strip()
+DOUYIN_DTK_V5_URL = os.getenv("DOUYIN_DTK_V5_URL", "").strip().rstrip("/")
+DOUYIN_DTK_V5_API_KEY = os.getenv("DOUYIN_DTK_V5_API_KEY", "").strip()
+DOUYIN_DTK_V5_TIMEOUT = int(os.getenv("DOUYIN_DTK_V5_TIMEOUT", "35"))
 DOUYIN_REQABLE_CAPTURE_DIR = os.getenv("DOUYIN_REQABLE_CAPTURE_DIR", "/reqable-capture").strip()
 DOUYIN_REQABLE_CAPTURE_MAX_AGE_SECONDS = int(os.getenv("DOUYIN_REQABLE_CAPTURE_MAX_AGE_SECONDS", "3600"))
 DOUYIN_REQABLE_CAPTURE_ENABLED = os.getenv("DOUYIN_REQABLE_CAPTURE_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
@@ -202,6 +205,55 @@ def _remote_headers() -> dict:
         return {}
 
 
+def _find_dtk_v5_media(value):
+    """Extract a playable media URL from v5's structured response."""
+    if isinstance(value, dict):
+        for key in ("url", "play_url", "playUrl", "download_url", "downloadAddr", "download_addr"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and _looks_like_media_url(candidate):
+                return candidate
+            if isinstance(candidate, list):
+                for item in candidate:
+                    if isinstance(item, str) and _looks_like_media_url(item):
+                        return item
+        for nested in value.values():
+            found = _find_dtk_v5_media(nested)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for nested in value:
+            found = _find_dtk_v5_media(nested)
+            if found:
+                return found
+    return None
+
+
+def _fetch_dtk_v5(source_url: str):
+    """Use the optional DTK v5 resolver without changing the legacy path."""
+    if not DOUYIN_DTK_V5_URL:
+        return None
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+    if DOUYIN_DTK_V5_API_KEY:
+        headers["Authorization"] = f"Bearer {DOUYIN_DTK_V5_API_KEY}"
+    try:
+        response = requests.post(
+            f"{DOUYIN_DTK_V5_URL}/api/v1/parse?wait={DOUYIN_DTK_V5_TIMEOUT}",
+            json={"url": source_url},
+            headers=headers,
+            timeout=DOUYIN_DTK_V5_TIMEOUT + 5,
+        )
+        if response.status_code not in (200, 202):
+            logger.warning(f"DTK v5 resolver returned HTTP {response.status_code}")
+            return None
+        payload = response.json()
+        direct_url = _find_dtk_v5_media(payload)
+        if not direct_url:
+            logger.warning("DTK v5 resolver returned no playable media URL")
+            return None
+        return _as_ytdlp_info(source_url, payload if isinstance(payload, dict) else {}, direct_url, "dtk-v5")
+    except Exception as exc:
+        logger.warning(f"DTK v5 resolver failed: {exc}")
+        return None
 def _extract_router_data(html: str) -> dict | None:
     match = re.search(r"window\._ROUTER_DATA\s*=\s*(.*?)</script>", html, re.DOTALL)
     if not match:
@@ -668,9 +720,10 @@ def fetch_douyin_video(url: str, user_id=None) -> dict | None:
             return shared
 
     if DOUYIN_REQABLE_CAPTURE_ENABLED and DOUYIN_REQABLE_CAPTURE_FIRST:
-        return _fetch_reqable_capture(source_url) or _fetch_local_sidecar(source_url) or _fetch_remote_resolver(source_url)
+        return _fetch_reqable_capture(source_url) or _fetch_dtk_v5(source_url) or _fetch_local_sidecar(source_url) or _fetch_remote_resolver(source_url)
     return (
         _fetch_mobile_share_page(source_url)
+        or _fetch_dtk_v5(source_url)
         or _fetch_local_sidecar(source_url)
         or (_fetch_public_api(source_url) if DOUYIN_PUBLIC_API_ENABLED else None)
         or _fetch_remote_resolver(source_url)

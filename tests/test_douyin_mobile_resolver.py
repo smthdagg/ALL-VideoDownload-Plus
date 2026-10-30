@@ -37,6 +37,32 @@ def load_douyin_api_module():
 
 
 class DouyinMobileResolverTest(unittest.TestCase):
+    def test_dtk_v5_resolver_is_opt_in_and_extracts_structured_media(self):
+        module = load_douyin_api_module()
+        module.DOUYIN_DTK_V5_URL = "http://dtk-v5:8000"
+        module.DOUYIN_DTK_V5_API_KEY = "fixture-key"
+        module.requests.post = Mock(return_value=Mock(
+            status_code=200,
+            json=lambda: {"data": {"content": {"videos": [{"playUrl": "https://cdn.example/video.mp4"}]}}},
+        ))
+        result = module._fetch_dtk_v5("https://www.douyin.com/video/123")
+        self.assertEqual(result["url"], "https://cdn.example/video.mp4")
+        self.assertEqual(result["formats"][0]["format_id"], "dtk-v5")
+        kwargs = module.requests.post.call_args.kwargs
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer fixture-key")
+
+    def test_dtk_v5_resolver_is_disabled_by_default(self):
+        module = load_douyin_api_module()
+        module.DOUYIN_DTK_V5_URL = ""
+        module.requests.post = Mock()
+        self.assertIsNone(module._fetch_dtk_v5("https://www.douyin.com/video/123"))
+        module.requests.post.assert_not_called()
+
+    def test_remote_resolver_headers_keep_json_contract(self):
+        module = load_douyin_api_module()
+        module.DOUYIN_REMOTE_RESOLVER_HEADERS_JSON = '{"X-Test": "ok"}'
+        self.assertEqual(module._remote_headers(), {"X-Test": "ok"})
+
     def test_mobile_resolver_sends_uploaded_cookie_and_anonymous_tokens_in_header(self):
         module = load_douyin_api_module()
         import tempfile

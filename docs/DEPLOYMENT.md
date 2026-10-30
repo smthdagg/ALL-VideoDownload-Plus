@@ -237,3 +237,18 @@ checks before replacing the active VPS container.
 Future coding agents must read [AGENTS.md](../AGENTS.md) first. The ignored
 `vendor/tg-ytdlp-bot` tree is generated output; durable fixes belong in
 `scripts/apply-private-hardening.py`, `scripts/templates/`, tests, and docs.
+### Optional DTK v5 canary
+
+The `Evil0ctal/Douyin_TikTok_Download_API` v5.1.8 stack is tested separately
+because it requires its own browser-rpc, PostgreSQL, Redis, and worker services.
+After that stack is reachable from the bot, enable only the resolver bridge:
+
+```dotenv
+DOUYIN_DTK_V5_URL=http://127.0.0.1:8000
+DOUYIN_DTK_V5_API_KEY=replace-with-a-scoped-key
+DOUYIN_DTK_V5_TIMEOUT=35
+```
+
+Leave `DOUYIN_DTK_V5_URL` empty to keep the existing sidecar path. The bridge
+does not upload files from the v5 media volume; it only accepts a playable URL
+from the v5 parse response and falls back to the legacy resolvers when absent.

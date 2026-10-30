@@ -192,3 +192,14 @@ Instagram、X/Twitter 和 YouTube。TikTok 必须检查实际音频流和视频�
 新的 Coding Agent 必须先读根目录 [AGENTS.md](../AGENTS.md)。
 `vendor/tg-ytdlp-bot` 是被忽略的生成目录，长期修改必须写入
 `scripts/apply-private-hardening.py`、`scripts/templates/`、测试和文档。
+### 可选 DTK v5 灰度
+
+`Evil0ctal/Douyin_TikTok_Download_API` v5.1.8 需要独立的 browser-rpc、PostgreSQL、Redis 和 Worker，因此先独立部署测试。确认 v5 服务可被 Bot 访问后，再启用兼容解析器：
+
+```dotenv
+DOUYIN_DTK_V5_URL=http://127.0.0.1:8000
+DOUYIN_DTK_V5_API_KEY=替换为具有限定权限的密钥
+DOUYIN_DTK_V5_TIMEOUT=35
+```
+
+保持 `DOUYIN_DTK_V5_URL` 为空即可继续使用现有 sidecar。兼容层不会读取 v5 的媒体卷，只从 v5 解析响应中提取可播放直链；提取失败时自动回退到旧解析器。
