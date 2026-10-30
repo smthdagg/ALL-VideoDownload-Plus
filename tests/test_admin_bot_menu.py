@@ -57,7 +57,7 @@ class AdminBotMenuTest(unittest.TestCase):
         sys.modules.setdefault("HELPERS", helpers)
         sys.modules.setdefault("HELPERS.private_i18n", private_i18n)
 
-    def test_registers_yuanbao_cookie_command_only_for_admin_chats(self):
+    def test_registers_only_user_management_for_admin_chats(self):
         module = load_module()
 
         app = FakeApp([FakeBotCommand("start", "Start the bot")])
@@ -75,37 +75,19 @@ class AdminBotMenuTest(unittest.TestCase):
             self.assertEqual(scope.chat_id in (123, 456), True)
             descriptions = dict((item.command, item.description) for item in commands)
             self.assertEqual(language_code in (None, "en", "zh"), True)
-            expected = "Open user management" if language_code == "en" else "打开用户管理菜单"
+            expected = "User management" if language_code == "en" else "用户管理"
             if language_code is None:
-                expected = "Open user management"
+                expected = "User management"
             self.assertEqual(descriptions["users"], expected)
 
-    def test_replaces_an_existing_yuanbao_command_without_duplicates(self):
+    def test_replaces_stale_commands_in_every_scope(self):
         module = load_module()
-
-        app = FakeApp(
-            [
-                FakeBotCommand("start", "Start the bot"),
-                FakeBotCommand("set_yuanbao_cookie", "Old description"),
-            ]
-        )
-
+        app = FakeApp([FakeBotCommand('set_yuanbao_cookie', 'Old'), FakeBotCommand('add_user', 'Old'), FakeBotCommand('cookies_from_browser', 'Old')])
         module.register_admin_bot_commands(app, [123])
-
-        commands, _, language_code = next(
-            call for call in app.set_calls if call[1] is not None
-        )
-        self.assertEqual(
-            [item.command for item in commands].count("set_yuanbao_cookie"),
-            1,
-        )
-        yuanbao = next(
-            item for item in commands if item.command == "set_yuanbao_cookie"
-        )
-        expected = "Update WeChat Channels Cookie" if language_code == "en" else "更新视频号元宝 Cookie"
-        if language_code is None:
-            expected = "Update WeChat Channels Cookie"
-        self.assertEqual(yuanbao.description, expected)
+        for commands, scope, language in app.set_calls:
+            names = [command.command for command in commands]
+            self.assertEqual(names, ['start', 'settings', 'cookie', 'help'] + (['users'] if scope else []))
+            self.assertNotIn('set_yuanbao_cookie', names)
 
     def test_builds_a_menu_when_telegram_has_no_existing_commands(self):
         module = load_module()
@@ -115,7 +97,7 @@ class AdminBotMenuTest(unittest.TestCase):
 
         default_commands = app.set_calls[0][0]
         self.assertIn("help", [item.command for item in default_commands])
-        self.assertIn("lang", [item.command for item in default_commands])
+        self.assertIn("settings", [item.command for item in default_commands])
 
 
 if __name__ == "__main__":

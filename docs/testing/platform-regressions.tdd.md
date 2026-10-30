@@ -26,7 +26,7 @@
 
 ## Known external-state gap
 
-WeChat Channels Yuanbao fallback returns HTTP 401 when the private Yuanbao login cookie expires. Code cannot renew that third-party login session; an administrator must provide a fresh cookie with `/set_yuanbao_cookie`.
+WeChat Channels Yuanbao fallback returns HTTP 401 when the private Yuanbao login cookie expires. Code cannot renew that third-party login session; the user must import a freshly exported Yuanbao Cookie TXT through Settings → Cookies & accounts.
 
 The cookie-free Douyin public endpoint may return an anonymous-request security
 error such as `Uifid Not Found`. The public fallback is intentionally

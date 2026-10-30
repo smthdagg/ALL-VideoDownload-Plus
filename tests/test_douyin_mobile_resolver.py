@@ -43,7 +43,7 @@ class DouyinMobileResolverTest(unittest.TestCase):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
             cookie_path = Path(td) / "cookie.txt"
-            cookie_path.write_text("# Netscape HTTP Cookie File\n.douyin.com\tTRUE\t/\tFALSE\t2147483647\tsessionid\tPERSONAL\n")
+            cookie_path.write_text("# Netscape HTTP Cookie File\n.douyin.com\tTRUE\t/\tFALSE\t2147483647\tsessionid\tPERSONAL\n.bilibili.com\tTRUE\t/\tFALSE\t2147483647\tSESSDATA\tBILI-PRIVATE\n")
             response = Mock(url="https://www.iesdouyin.com/share/video/123")
             response.text = '<script>window._ROUTER_DATA = {"loaderData":{}}</script>'
             module.requests.get = Mock(return_value=response)
@@ -52,6 +52,8 @@ class DouyinMobileResolverTest(unittest.TestCase):
                 module._fetch_mobile_share_page("https://www.douyin.com/video/123", cookie_path=cookie_path)
             sent = module.requests.get.call_args_list[0].kwargs['headers']['Cookie']
             self.assertIn("sessionid=PERSONAL", sent)
+            self.assertNotIn("BILI-PRIVATE", sent)
+            self.assertNotIn("SESSDATA", sent)
             self.assertIn("ttwid=TTWID-FIXTURE", sent)
             self.assertIn("s_v_web_id=verify_fixture_fixed_token", sent)
             self.assertIn("msToken=", sent)

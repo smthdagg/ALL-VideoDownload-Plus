@@ -19,6 +19,10 @@ def load_module():
     sys.modules["HELPERS.logger"] = types.SimpleNamespace(logger=logger)
     sys.modules["requests"] = types.SimpleNamespace(post=lambda *args, **kwargs: None)
 
+    store_spec = importlib.util.spec_from_file_location("HELPERS.cookie_store", ROOT / "scripts/templates/cookie_store.py")
+    store = importlib.util.module_from_spec(store_spec)
+    store_spec.loader.exec_module(store)
+    sys.modules["HELPERS.cookie_store"] = store
     spec = importlib.util.spec_from_file_location("wechat_channels_api_under_test", MODULE_PATH)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -74,3 +78,42 @@ class WeChatChannelsResolverTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class WeChatChannelsAuthFailureTest(unittest.TestCase):
+    def test_yuanbao_unauthorized_explains_refresh_without_secret(self):
+        module = load_module()
+        module.WECHAT_CHANNELS_YUANBAO_COOKIE = 'private-cookie'
+        response = Mock(status_code=401)
+        module.requests.post = Mock(return_value=response)
+        info, error = module._fetch_yuanbao('https://weixin.qq.com/sph/Fixture123')
+        self.assertIsNone(info)
+        self.assertIn('登录态已失效', error)
+        self.assertIn('/settings', error)
+        self.assertNotIn('private-cookie', error)
+
+
+class WeChatPersonalCookieTest(unittest.TestCase):
+    def test_imported_cookie_is_used_immediately_and_isolated(self):
+        import os
+        import tempfile
+        module = load_module()
+        store = sys.modules['HELPERS.cookie_store']
+        module.WECHAT_CHANNELS_YUANBAO_COOKIE = ''
+        response = Mock(status_code=200)
+        response.raise_for_status.return_value = None
+        response.json.return_value = {'data': {}}
+        module.requests.post = Mock(return_value=response)
+        with tempfile.TemporaryDirectory() as directory:
+            previous = os.getcwd()
+            try:
+                os.chdir(directory)
+                for value in ['first-fixture', 'new-fixture']:
+                    raw = ('# Netscape HTTP Cookie File\n.yuanbao.tencent.com\tTRUE\t/\tTRUE\t0\tlogin\t' + value + '\n').encode()
+                    store.import_cookies(123, raw)
+                    module._fetch_yuanbao('https://weixin.qq.com/sph/fixture', user_id=123)
+                    self.assertEqual(module.requests.post.call_args.kwargs['headers']['cookie'], 'login=' + value)
+                module.requests.post.reset_mock()
+                module._fetch_yuanbao('https://weixin.qq.com/sph/fixture', user_id=456)
+                module.requests.post.assert_not_called()
+            finally:
+                os.chdir(previous)

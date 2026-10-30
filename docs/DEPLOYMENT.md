@@ -15,7 +15,7 @@ SSH ports, credentials, and cookies are intentionally not stored in Git.
 - `rsync`, `tar`, and a SHA-256 utility
 - A Telegram Bot token plus Telegram `API_ID` and `API_HASH`
 
-The supported container baseline is Python 3.12, stable yt-dlp 2026.08.19, and
+The supported container baseline is Python 3.12, stable yt-dlp 2026.10.26, and
 bgutil-ytdlp-pot-provider 1.3.2.
 
 Storage protection defaults are configured in `.env`:

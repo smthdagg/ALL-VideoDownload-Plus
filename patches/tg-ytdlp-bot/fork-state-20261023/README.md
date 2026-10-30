@@ -1,6 +1,6 @@
 # fork-state-20261023 — 部署实例 fork 状态快照
 
-SG 实例 `vendor/tg-ytdlp-bot`（上游 upekshaip/tg-ytdlp-bot main, 2026-10-23）
+部署实例 `vendor/tg-ytdlp-bot`（上游 upekshaip/tg-ytdlp-bot main, 2026-10-23）
 相对上游的全部差异快照，用于灾后重建部署实例。
 
 ## 内容
@@ -24,3 +24,7 @@ cp -r /path/to/untracked/. .
 `CONFIG/config.py`（实例值含 BOT_TOKEN/ADMIN）、`users/`、`dump.json`、
 `.active_sessions.json`、twitter cookies、Caddy 证书与密钥、douyin 配置、
 `*.session*`、运行日志。实例值以 `CONFIG/config.py.example` + `.env` 重建。
+
+此快照保留历史实现；当前导航和Cookie流程由根项目templates与补丁生成器维护。示例域名与本机用户名已替换为占位符。
+
+2026-10-28：移除历史快照中不应发布的环境、Cookie、后台会话及部署文件片段。此清理只改变当前树，既有Git提交不能视作已清除。请勿将该历史快照当作生产私有备份。

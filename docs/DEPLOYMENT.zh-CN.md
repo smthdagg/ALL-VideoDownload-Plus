@@ -10,7 +10,7 @@
 - Git、Python 3、`rsync`、`tar`
 - Telegram Bot token、`API_ID` 和 `API_HASH`
 
-当前容器基线为 Python 3.12、稳定版 yt-dlp 2026.08.19 和
+当前容器基线为 Python 3.12、稳定版 yt-dlp 2026.10.26 和
 bgutil-ytdlp-pot-provider 1.3.2。
 
 `.env` 中的存储保护默认值如下：

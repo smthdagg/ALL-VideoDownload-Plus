@@ -21,3 +21,8 @@ users/
 downloads/
 download/
 dump.json
+
+# Local build and test artifacts.
+.build/
+__pycache__/
+*.pyc

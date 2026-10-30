@@ -4,27 +4,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 ADMIN_COMMANDS_BY_LANGUAGE = {
-    "en": (
-        ("set_yuanbao_cookie", "Update WeChat Channels Cookie"),
-        ("users", "Open user management"),
-        ("add_user", "Authorize a Bot user"),
-        ("remove_user", "Remove a Bot user"),
-        ("list_users", "List authorized users"),
-        ("blacklist_user", "Permanently blacklist a user"),
-        ("unblacklist_user", "Remove a permanent blacklist"),
-    ),
-    "zh": (
-        ("set_yuanbao_cookie", "更新视频号元宝 Cookie"),
-        ("users", "打开用户管理菜单"),
-        ("add_user", "添加可使用 Bot 的用户"),
-        ("remove_user", "移除可使用 Bot 的用户"),
-        ("list_users", "查看已授权用户"),
-        ("blacklist_user", "永久拉黑一个用户"),
-        ("unblacklist_user", "解除用户永久拉黑"),
-    ),
+    'en': (('users', 'User management'),),
+    'zh': (('users', '用户管理'),),
 }
-ADMIN_COMMANDS = ADMIN_COMMANDS_BY_LANGUAGE["en"]
-YUANBAO_COOKIE_COMMAND = ADMIN_COMMANDS[0][0]
+ADMIN_COMMANDS = ADMIN_COMMANDS_BY_LANGUAGE['en']
+YUANBAO_COOKIE_COMMAND = 'set_yuanbao_cookie'  # Legacy command, excluded from visible menus.
 TELEGRAM_MENU_LANGUAGE_CODES = {
     "en": ("en",),
     "zh": ("zh",),
@@ -35,14 +19,14 @@ from HELPERS.private_i18n import text
 COMMON_COMMAND_DESCRIPTIONS_ZH = {
     "start": "开始使用 Bot",
     "help": "查看使用帮助",
-    "settings": "打开下载设置",
+    "settings": "设置：下载、账号、界面与文件",
     "lang": "切换中文或英文",
     "format": "选择画质与格式",
     "audio": "下载音频",
     "img": "下载图片",
     "link": "获取直接下载链接",
     "clean": "清理已下载文件",
-    "cookie": "管理网站 Cookie",
+    "cookie": "导入 Cookie TXT 与查看状态",
     "check_cookie": "检查 Cookie 状态",
     "usage": "查看使用统计",
     "tags": "设置媒体标签",
@@ -107,28 +91,16 @@ def _localized_base_commands(default_commands, language, bot_command_type):
 
 
 def _fallback_commands(bot_command_type):
-    return [
-        bot_command_type(command, description)
-        for command, description in COMMON_COMMAND_DESCRIPTIONS_EN.items()
-    ]
+    return [bot_command_type(command, COMMON_COMMAND_DESCRIPTIONS_EN[command])
+            for command in ('start', 'settings', 'cookie', 'help')]
 
 
 def register_admin_bot_commands(app, admin_ids):
     """Register localized global menus and add maintenance commands for admins."""
     from pyrogram.types import BotCommand, BotCommandScopeChat
 
-    try:
-        default_commands = app.get_bot_commands()
-    except Exception as exc:
-        logger.warning("Could not read the default Telegram command menu: %s", exc)
-        default_commands = []
-    if not default_commands:
-        default_commands = _fallback_commands(BotCommand)
-
-    admin_command_names = {name for name, _ in ADMIN_COMMANDS}
-    base_commands = [
-        command for command in default_commands if command.command not in admin_command_names
-    ]
+    # Replace previous scopes instead of merging stale commands back into them.
+    base_commands = _fallback_commands(BotCommand)
 
     try:
         app.set_bot_commands(_localized_base_commands(base_commands, "en", BotCommand))

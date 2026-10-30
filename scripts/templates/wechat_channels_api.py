@@ -161,8 +161,10 @@ def _fetch_public_short_uri(source_url: str) -> tuple[dict | None, str | None]:
     return None, "公开接口没有返回视频媒体地址"
 
 
-def _fetch_yuanbao(source_url: str) -> tuple[dict | None, str | None]:
-    if not WECHAT_CHANNELS_YUANBAO_COOKIE:
+def _fetch_yuanbao(source_url: str, user_id=None) -> tuple[dict | None, str | None]:
+    from HELPERS.cookie_store import yuanbao_cookie_header
+    cookie_header = yuanbao_cookie_header(user_id) or WECHAT_CHANNELS_YUANBAO_COOKIE
+    if not cookie_header:
         return None, "未配置 WECHAT_CHANNELS_YUANBAO_COOKIE"
 
     payload = {
@@ -171,7 +173,7 @@ def _fetch_yuanbao(source_url: str) -> tuple[dict | None, str | None]:
         "scene": 1,
     }
     headers = dict(YUANBAO_PARSE_HEADERS)
-    headers["cookie"] = WECHAT_CHANNELS_YUANBAO_COOKIE
+    headers["cookie"] = cookie_header
     try:
         response = requests.post(
             "https://yuanbao.tencent.com/api/weixin/get_parse_result",
@@ -179,6 +181,11 @@ def _fetch_yuanbao(source_url: str) -> tuple[dict | None, str | None]:
             data=json.dumps(payload),
             timeout=WECHAT_CHANNELS_TIMEOUT,
         )
+        if response.status_code in (401, 403):
+            return None, (
+                "元宝登录态已失效，请在 /settings → Cookie → 导入 Cookie TXT "
+                "上传已登录元宝导出的文件后重试"
+            )
         response.raise_for_status()
         parse_result = response.json()
     except Exception as exc:
@@ -221,7 +228,7 @@ def _fetch_yuanbao(source_url: str) -> tuple[dict | None, str | None]:
     return info, None
 
 
-def fetch_wechat_channels_video(url: str) -> dict | None:
+def fetch_wechat_channels_video(url: str, user_id=None) -> dict | None:
     if not is_wechat_channels_url(url):
         return None
 
@@ -230,7 +237,7 @@ def fetch_wechat_channels_video(url: str) -> dict | None:
     if info:
         return info
 
-    yuanbao_info, yuanbao_error = _fetch_yuanbao(source_url)
+    yuanbao_info, yuanbao_error = _fetch_yuanbao(source_url, user_id=user_id)
     if yuanbao_info:
         return yuanbao_info
 

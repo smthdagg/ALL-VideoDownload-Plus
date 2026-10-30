@@ -30,7 +30,7 @@ HELP_MSG = """
 • Send a Netscape-format <code>cookies.txt</code> file when a site requires login.
 • <code>/cookie</code>: open the cookie tools.
 • <code>/check_cookie</code>: check saved cookie status.
-• Admins can update the WeChat Channels Yuanbao cookie from Settings.
+• Use Settings → Cookies & accounts to import any supported platform Cookie TXT.
 
 <b>Language and account</b>
 • <code>/lang</code>: switch between English and Chinese.

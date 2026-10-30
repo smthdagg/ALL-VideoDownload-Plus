@@ -26,6 +26,36 @@ def install_platform_runtime() -> None:
     destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def patch_non_youtube_cookie_retry_guards() -> None:
+    """Keep TikTok/Douyin cookie retries in the download layer only."""
+    yt_hook = APP / "DOWN_AND_UP" / "yt_dlp_hook.py"
+    replace_once(
+        yt_hook,
+        "from HELPERS.fallback_helper import should_fallback_to_gallery_dl\n",
+        "from HELPERS.fallback_helper import should_fallback_to_gallery_dl\n"
+        "from URL_PARSERS.douyin_api import is_douyin_url\n",
+    )
+    replace_once(
+        yt_hook,
+        "if any(keyword in error_str for keyword in ['cookie', 'auth', 'login', 'sign in', '403', '401', 'forbidden', 'unauthorized']):\n",
+        "if (not is_douyin_url(url) and 'tiktok.com' not in url.lower() and\n"
+        "        any(keyword in error_str for keyword in ['cookie', 'auth', 'login', 'sign in', '403', '401', 'forbidden', 'unauthorized'])):\n",
+    )
+
+    down_and_up = APP / "DOWN_AND_UP" / "down_and_up.py"
+    replace_once(
+        down_and_up,
+        "from HELPERS.fallback_helper import should_fallback_to_gallery_dl\n",
+        "from HELPERS.fallback_helper import should_fallback_to_gallery_dl\n"
+        "from URL_PARSERS.platform_runtime import should_retry_non_youtube_cookie\n",
+    )
+    replace_once(
+        down_and_up,
+        "if any(keyword in error_str for keyword in ['cookie', 'auth', 'login', 'sign in', '403', '401', 'forbidden', 'unauthorized']):\n",
+        "if should_retry_non_youtube_cookie(error_str, did_cookie_retry):\n",
+    )
+
+
 def install_douyin_public_api() -> None:
     source = ROOT / "scripts" / "templates" / "douyin_public_api.py"
     destination = APP / "URL_PARSERS" / "douyin_public_api.py"
@@ -1160,10 +1190,11 @@ def patch_runtime_dependencies() -> None:
     text = requirements_path.read_text(encoding="utf-8")
     text = text.replace("moviepy==1.0.3\n", "", 1)
     text = text.replace("--pre\n", "", 1)
-    text = text.replace(
-        "yt-dlp[default,curl-cffi]\n",
-        "yt-dlp[default,curl-cffi]==2026.8.19\n",
-        1,
+    text = re.sub(
+        r"yt-dlp\[default,curl-cffi\](?:==[0-9.]+)?\n",
+        "yt-dlp[default,curl-cffi]==2026.10.26\n",
+        text,
+        count=1,
     )
     text = text.replace(
         "bgutil-ytdlp-pot-provider\n",
@@ -2129,8 +2160,75 @@ def patch_single_douyin_probe() -> None:
         other.write_text(content.replace("fetch_douyin_video(url)", "fetch_douyin_video(url, user_id=user_id)"), encoding="utf-8")
 
 
+def patch_wechat_channels_failure() -> None:
+    source = ROOT / "scripts" / "templates" / "wechat_channels_api.py"
+    (APP / "URL_PARSERS" / "wechat_channels_api.py").write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    path = APP / "DOWN_AND_UP" / "down_and_up.py"
+    marker = '        if wechat_channels_info and wechat_channels_info.get("url"):\n'
+    guard = '        if not wechat_channels_info or wechat_channels_info.get("error"):\n            from html import escape\n            detail = (wechat_channels_info or {}).get("original_error", "视频号解析器未返回媒体地址")\n            send_error_to_user(message, "视频号下载暂不可用：" + escape(detail))\n            return\n'
+    replace_once(path, marker, guard + marker)
+    path = APP / "DOWN_AND_UP" / "always_ask_menu.py"
+    marker = "            # Check for Douyin resolver failures before yt-dlp fallback can loop on cookies\n"
+    guard = '            if isinstance(info, dict) and info.get("error") == "WECHAT_CHANNELS_MEDIA_UNAVAILABLE":\n                from html import escape\n                delete_processing_message(app, user_id, proc_msg)\n                send_error_to_user(message, "视频号下载暂不可用：" + escape(info.get("original_error", "未返回媒体地址")))\n                return\n\n'
+    replace_once(path, marker, guard + marker)
+
+
+def install_cookie_import() -> None:
+    for name in ('cookie_store.py', 'cookie_import_ui.py'):
+        source = ROOT / 'scripts' / 'templates' / name
+        (APP / 'HELPERS' / name).write_text(source.read_text(encoding='utf-8'), encoding='utf-8')
+    path = APP / 'COMMANDS' / 'cookies_cmd.py'
+    replace_once(path,
+        '    user_id = str(message.chat.id)\n    # Check file size\n',
+        '    from HELPERS.cookie_import_ui import handle_cookie_document\n    if handle_cookie_document(app, message):\n        return\n    user_id = str(message.chat.id)\n    # Check file size\n')
+    content = path.read_text(encoding='utf-8')
+    registration = '\nfrom HELPERS.cookie_import_ui import register_cookie_import\nregister_cookie_import(app)\n'
+    if registration not in content:
+        path.write_text(content + registration, encoding='utf-8')
+    path = APP / 'COMMANDS' / 'settings_cmd.py'
+    if '        cookie_buttons = [\n' in path.read_text(encoding='utf-8'):
+        replace_once(path, '        cookie_buttons = [\n',
+            '        cookie_buttons = [\n            [InlineKeyboardButton("导入 Cookie TXT / Import", callback_data="cookie_import|menu")],\n')
+    for relative in ('DOWN_AND_UP/yt_dlp_hook.py', 'DOWN_AND_UP/down_and_up.py', 'COMMANDS/link_cmd.py'):
+        path = APP / relative
+        content = path.read_text(encoding='utf-8')
+        path.write_text(content.replace('fetch_wechat_channels_video(url)', 'fetch_wechat_channels_video(url, user_id=user_id)'), encoding='utf-8')
+
+
+def install_navigation() -> None:
+    source = ROOT / 'scripts' / 'templates' / 'navigation.py'
+    (APP / 'HELPERS' / 'navigation.py').write_text(source.read_text(encoding='utf-8'), encoding='utf-8')
+    path = APP / 'COMMANDS' / 'settings_cmd.py'
+    content = path.read_text(encoding='utf-8')
+    # Replace category rendering, retain the underlying command handlers.
+    for name, body in {
+        'settings_command': "    from HELPERS.navigation import show_navigation\n    show_navigation(app, message, 'settings')\n",
+        'settings_menu_callback': '    from HELPERS.navigation import legacy_settings_menu\n    legacy_settings_menu(app, callback_query)\n',
+    }.items():
+        tree = ast.parse(content)
+        node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == name)
+        lines = content.splitlines(keepends=True)
+        content = ''.join(lines[:node.body[0].lineno-1]) + body + ''.join(lines[node.end_lineno:])
+    path.write_text(content, encoding='utf-8')
+    replace_once(path, 'def settings_cmd_callback(app, callback_query: CallbackQuery):\n',
+        'def settings_cmd_callback(app, callback_query: CallbackQuery):\n    from HELPERS.navigation import redirect_old_cookie_button\n    if redirect_old_cookie_button(app, callback_query):\n        return\n')
+    registration = '\nfrom HELPERS.navigation import register_navigation\nregister_navigation(app)\n'
+    content = path.read_text(encoding='utf-8')
+    if registration not in content:
+        path.write_text(content + registration, encoding='utf-8')
+    path = APP / 'URL_PARSERS' / 'url_extractor.py'
+    replace_once(path, '    if text == "/start":\n',
+        '    if text == "/start":\n        from HELPERS.navigation import show_navigation\n        if show_navigation(app, message, "home"):\n            return\n')
+    marker = '    if text == Config.DOWNLOAD_COOKIE_COMMAND or text.startswith(Config.DOWNLOAD_COOKIE_COMMAND + " "):\n'
+    replace_once(path, marker, marker + '        if text == Config.DOWNLOAD_COOKIE_COMMAND:\n            from HELPERS.navigation import show_navigation\n            if show_navigation(app, message, "cookies"):\n                return\n')
+    # Keep the startup source list consistent with the deterministic Telegram scopes.
+    commands_path = APP / 'TXT' / 'commands.txt'
+    commands_path.write_text('start - Start\nsettings - Settings\ncookie - Import Cookie TXT\nhelp - Help\n', encoding='utf-8')
+
+
 def main() -> None:
     install_platform_runtime()
+    patch_non_youtube_cookie_retry_guards()
     install_douyin_public_api()
     install_bot_menu()
     install_tiktok_retry()
@@ -2152,7 +2250,6 @@ def main() -> None:
     patch_share_text_tag_parser()
     patch_douyin_always_ask_error()
     patch_yuanbao_cookie_command()
-    patch_yuanbao_cookie_menus()
     patch_project_links()
     patch_private_user_commands()
     patch_tiktok_telegram_safe_format()
@@ -2161,6 +2258,9 @@ def main() -> None:
     patch_reply_keyboard_messages()
     patch_bounded_cookie_fallback()
     patch_single_douyin_probe()
+    patch_wechat_channels_failure()
+    install_cookie_import()
+    install_navigation()
     print("Private hardening applied.")
 
 

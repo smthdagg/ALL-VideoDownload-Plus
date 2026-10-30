@@ -15,6 +15,10 @@ _RETRYABLE_ERRORS = (
     "http error 403",
     "403 forbidden",
     "challenge",
+    "unexpected_eof_while_reading",
+    "unexpected eof while reading",
+    "connection reset",
+    "read timed out",
 )
 
 

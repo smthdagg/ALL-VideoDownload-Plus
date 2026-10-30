@@ -13,8 +13,10 @@ class AdminManagementContractTest(unittest.TestCase):
             path.read_text(encoding="utf-8", errors="ignore")
             for path in (ROOT / "scripts/templates").glob("*.py")
         )
-        admin_block = menu.split('"en": (', 1)[1].split('"zh": (', 1)[0]
-        admin_commands = set(re.findall(r'\("([a-z_]+)",', admin_block))
+        import ast
+        tree = ast.parse(menu)
+        assignment = next(n for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'ADMIN_COMMANDS_BY_LANGUAGE' for t in n.targets))
+        admin_commands = {command for command, _ in ast.literal_eval(assignment.value)['en']}
         for command in admin_commands:
             if command in {"en", "zh"}:
                 continue
@@ -45,7 +47,7 @@ class AdminManagementContractTest(unittest.TestCase):
         self.assertIn('os.getenv("VPS_DASHBOARD_HTTP_BINDING", "80:80")', patch)
         self.assertIn('      - "8443:443"', patch)
         self.assertIn("bgutil-ytdlp-pot-provider==1.3.2", patch)
-        self.assertIn("yt-dlp[default,curl-cffi]==2026.8.19", patch)
+        self.assertIn("yt-dlp[default,curl-cffi]==2026.10.26", patch)
         self.assertIn('text.replace("--pre\\n", "", 1)', patch)
         self.assertIn('text.replace("moviepy==1.0.3\\n", "", 1)', patch)
         self.assertIn('text.replace("from moviepy.editor import VideoFileClip\\n", "", 1)', patch)
@@ -63,6 +65,9 @@ class AdminManagementContractTest(unittest.TestCase):
         self.assertIn("unexpected response from webpage request", retry)
         self.assertIn("tiktok api keeps sending the same page", retry)
         self.assertIn("http error 403", retry)
+        self.assertIn("unexpected_eof_while_reading", retry)
+        self.assertIn("connection reset", retry)
+        self.assertIn("read timed out", retry)
         self.assertIn("range(1, max_attempts + 1)", retry)
         self.assertIn("time.sleep(attempt)", retry)
 

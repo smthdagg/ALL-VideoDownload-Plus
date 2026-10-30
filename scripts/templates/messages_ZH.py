@@ -30,7 +30,7 @@ class Messages(EnglishMessages):
 • 某些私密或受限制内容需要用户自己的 cookies.txt。
 • 直接把 cookies.txt 作为文件发送给 Bot。
 • <code>/check_cookie</code>：检查 Cookie。
-• 管理员可在 /settings → Cookie 中更新视频号元宝 Cookie。
+• 在 /settings → Cookie 与账号 上传 TXT，即可更新视频号、抖音、B站、小红书等 Cookie。
 
 <b>播放列表和多媒体帖子</b>
 • <code>链接*1*5</code>：下载第 1 至 5 项。

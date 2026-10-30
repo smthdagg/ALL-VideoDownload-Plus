@@ -345,6 +345,9 @@ def _build_mobile_cookie_header(cookie_path: Path | None = None) -> str:
             logger.warning("Douyin mobile resolver could not load the uploaded cookie jar")
         else:
             for cookie in jar:
+                host = cookie.domain.lower().lstrip('.')
+                if not any(host == domain or host.endswith('.' + domain) for domain in ('douyin.com', 'iesdouyin.com', 'bytedance.com')):
+                    continue
                 if cookie.name and cookie.value and cookie.name not in seen:
                     pairs.append((cookie.name, cookie.value))
                     seen.add(cookie.name)

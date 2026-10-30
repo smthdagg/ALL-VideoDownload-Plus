@@ -27,7 +27,7 @@ timers, and migration tooling.
 
 - Public project name: `ALL VideoDownload Plus`.
 - Python 3.12 Docker base.
-- Stable `yt-dlp 2026.08.19` with `curl-cffi`.
+- Stable `yt-dlp 2026.10.26` with `curl-cffi`.
 - `bgutil-ytdlp-pot-provider 1.3.2` service and plugin.
 - Caddy dashboard proxy and optional
   `Evil0ctal/Douyin_TikTok_Download_API` sidecar.
