@@ -57,7 +57,10 @@ def is_wechat_channels_url(url: str) -> bool:
     host = parsed.netloc.lower()
     if host not in WECHAT_CHANNELS_ALLOWED_HOSTS:
         return False
-    return "/sph/" in parsed.path or "/finder-preview/pages/sph" in parsed.path
+    if "/sph/" in parsed.path or parsed.path.endswith("/finder-preview/pages/sph"):
+        return True
+    return (host == "channels.weixin.qq.com" and parsed.path == "/finder-preview/pages/feed"
+            and bool(parse_qs(parsed.query).get("eid", [""])[0]))
 
 
 def _extract_short_uri(url: str) -> str | None:
@@ -120,7 +123,8 @@ def _as_ytdlp_info(source_url: str, feed: dict, direct_url: str, source: str = "
         "acodec": "aac",
     }
     return {
-        "id": _extract_short_uri(source_url) or "wechat-channels",
+        "id": (_extract_short_uri(source_url)
+               or parse_qs(urlparse(source_url).query).get("eid", ["wechat-channels"])[0]),
         "title": title,
         "description": feed.get("description"),
         "webpage_url": source_url,
@@ -135,11 +139,18 @@ def _as_ytdlp_info(source_url: str, feed: dict, direct_url: str, source: str = "
 
 def _fetch_public_short_uri(source_url: str) -> tuple[dict | None, str | None]:
     short_uri = _extract_short_uri(source_url)
-    if not short_uri:
-        return None, "无法识别视频号 shortUri"
-
-    referer = f"https://channels.weixin.qq.com/finder-preview/pages/sph?id={quote(short_uri)}"
-    payload = {"baseReq": {"generalToken": ""}, "shortUri": short_uri}
+    if short_uri:
+        referer = f"https://channels.weixin.qq.com/finder-preview/pages/sph?id={quote(short_uri)}"
+        payload = {"baseReq": {"generalToken": ""}, "shortUri": short_uri}
+    else:
+        parsed = urlparse(source_url)
+        query = parse_qs(parsed.query)
+        export_id = query.get("eid", [""])[0]
+        if parsed.netloc.lower() != "channels.weixin.qq.com" or parsed.path != "/finder-preview/pages/feed" or not export_id:
+            return None, "无法识别视频号链接"
+        token = query.get("token", [""])[0]
+        referer = f"https://channels.weixin.qq.com/finder-preview/pages/feed?eid={quote(export_id)}&token={quote(token)}"
+        payload = {"baseReq": {"generalToken": token}, "exportId": export_id}
     result = _post_feed_info(payload, referer)
     if not isinstance(result, dict):
         return None, "视频号公开接口没有返回有效 JSON"
@@ -241,7 +252,7 @@ def fetch_wechat_channels_video(url: str, user_id=None) -> dict | None:
     if yuanbao_info:
         return yuanbao_info
 
-    logger.warning(f"WeChat Channels resolver did not return media for {source_url}: {error}; {yuanbao_error}")
+    logger.warning(f"WeChat Channels resolver did not return media: {error}; {yuanbao_error}")
     return {
         "error": "WECHAT_CHANNELS_MEDIA_UNAVAILABLE",
         "original_error": (

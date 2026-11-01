@@ -26,6 +26,21 @@ def install_platform_runtime() -> None:
     destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def patch_bilibili_proxy() -> None:
+    helper = APP / "HELPERS" / "proxy_helper.py"
+    anchor = "def add_proxy_to_ytdl_opts(ytdl_opts: dict, url: str, user_id: int = None) -> dict:\n"
+    replace_once(
+        helper, anchor,
+        anchor
+        + "    from urllib.parse import urlsplit\n"
+        + "    host = (urlsplit(url).hostname or '').lower()\n"
+        + "    proxy = os.getenv('BILIBILI_PROXY_URL') or os.getenv('DOUYIN_MOBILE_PROXY_URL')\n"
+        + "    if proxy and (host == 'b23.tv' or host == 'bilibili.com' or host.endswith('.bilibili.com')):\n"
+        + "        ytdl_opts['proxy'] = proxy\n"
+        + "        return ytdl_opts\n",
+    )
+
+
 def patch_non_youtube_cookie_retry_guards() -> None:
     """Keep TikTok/Douyin cookie retries in the download layer only."""
     yt_hook = APP / "DOWN_AND_UP" / "yt_dlp_hook.py"
@@ -2195,6 +2210,86 @@ def install_cookie_import() -> None:
         path.write_text(content.replace('fetch_wechat_channels_video(url)', 'fetch_wechat_channels_video(url, user_id=user_id)'), encoding='utf-8')
 
 
+def patch_truthful_format_menu() -> None:
+    source = ROOT / 'scripts' / 'templates' / 'truthful_format_menu.py'
+    (APP / 'HELPERS' / 'truthful_format_menu.py').write_text(source.read_text(encoding='utf-8'), encoding='utf-8')
+    path = APP / 'DOWN_AND_UP' / 'always_ask_menu.py'
+    text = path.read_text(encoding='utf-8')
+    marker = 'from HELPERS.truthful_format_menu import allow_manual_qualities, strict_quality_selector\n'
+    text = text.replace('from HELPERS.truthful_format_menu import allow_manual_qualities\n', marker)
+    if marker not in text:
+        text = marker + text
+    old = '        buttons.append(InlineKeyboardButton(other_label, callback_data=f"askq|other_qualities"))'
+    new = '        if allow_manual_qualities(url):\n    ' + old
+    text = text.replace(new, old, 1)
+    if old not in text:
+        raise RuntimeError('Quality menu insertion point changed')
+    old = '        buttons.append(InlineKeyboardButton(safe_get_messages(user_id).ALWAYS_ASK_OTHER_LABEL_MSG, callback_data=f"askq|other_qualities"))'
+    new = '        if allow_manual_qualities(url):\n    ' + old
+    text = text.replace(new, old, 1)
+    if old not in text:
+        raise RuntimeError('Alternate quality menu insertion point changed')
+    old = '            if quality_key in cached_qualities:\n'
+    new = '            if quality_key in cached_qualities and (quality_key == "mp3" or allow_manual_qualities(url)):\n'
+    if new not in text:
+        if old not in text:
+            raise RuntimeError('Cached quality insertion point changed')
+        text = text.replace(old, new, 1)
+    for old, new in (
+        ('fmt = f"{video_format_id}+{audio_format_id}/bv+ba/best"',
+         'fmt = video_format_id if not allow_manual_qualities(url) else f"{video_format_id}+{audio_format_id}/bv+ba/best"'),
+        ('fmt = f"{selected_format.get(\'format_id\', \'\')}+bestaudio/bv+ba/best"',
+         'fmt = selected_format.get("format_id", "") if not allow_manual_qualities(url) else f"{selected_format.get(\'format_id\', \'\')}+bestaudio/bv+ba/best"'),
+    ):
+        if new not in text:
+            if old not in text:
+                raise RuntimeError('Video-only selection insertion point changed')
+            text = text.replace(old, new, 1)
+    old = '            cmd.append(url)\n            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)'
+    new = ('            from HELPERS.proxy_helper import add_proxy_to_ytdl_opts\n'
+           '            selected_proxy = add_proxy_to_ytdl_opts({}, url, user_id).get("proxy")\n'
+           '            if selected_proxy and "--proxy" not in cmd:\n'
+           '                cmd.extend(["--proxy", selected_proxy])\n' + old)
+    if new not in text:
+        if old not in text:
+            raise RuntimeError('Format listing proxy insertion point changed')
+        text = text.replace(old, new, 1)
+    old = '    down_and_up(app, message, url, playlist_name, video_count, video_start_with, tags_text, force_no_title=is_tiktok, format_override=fmt, quality_key=quality_key, cookies_already_checked=True, cached_video_info=info)'
+    new = '    fmt = strict_quality_selector(url, quality_key, fmt)\n' + old
+    if new not in text:
+        if old not in text:
+            raise RuntimeError('Quality download insertion point changed')
+        text = text.replace(old, new, 1)
+    path.write_text(text, encoding='utf-8')
+    video = APP / 'DOWN_AND_UP' / 'down_and_up.py'
+    anchor = '    # Reset the checked cookie-source cache for a new download task\n'
+    replace_once(video, anchor,
+                 '    from HELPERS.truthful_format_menu import strict_quality_selector\n'
+                 '    format_override = strict_quality_selector(url, quality_key, format_override)\n' + anchor)
+    audio = APP / 'DOWN_AND_UP' / 'down_and_audio.py'
+    content = audio.read_text(encoding='utf-8')
+    imports = ('from HELPERS.truthful_format_menu import audio_format_selector\n'
+               'from URL_PARSERS.wechat_channels_api import fetch_wechat_channels_video, is_wechat_channels_url\n')
+    if imports not in content:
+        content = imports + content
+    old = "download_format = format_override if format_override else 'ba'"
+    content = content.replace(old, 'download_format = audio_format_selector(format_override)')
+    if content.count('download_format = audio_format_selector(format_override)') != 2:
+        raise RuntimeError('Audio format selection insertion points changed')
+    marker = '            logger.info(f"Using Douyin API direct media URL for audio download: {original_url}")\n'
+    block = '''    if is_wechat_channels_url(url):
+        wechat_info = resolve_direct_media(url, cached_video_info, lambda source: fetch_wechat_channels_video(source, user_id=user_id))
+        if wechat_info:
+            cached_video_info = wechat_info
+            url = wechat_info["url"]
+'''
+    if block not in content:
+        if marker not in content:
+            raise RuntimeError('WeChat audio resolver insertion point changed')
+        content = content.replace(marker, marker + block, 1)
+    audio.write_text(content, encoding='utf-8')
+
+
 def install_navigation() -> None:
     source = ROOT / 'scripts' / 'templates' / 'navigation.py'
     (APP / 'HELPERS' / 'navigation.py').write_text(source.read_text(encoding='utf-8'), encoding='utf-8')
@@ -2228,6 +2323,7 @@ def install_navigation() -> None:
 
 def main() -> None:
     install_platform_runtime()
+    patch_bilibili_proxy()
     patch_non_youtube_cookie_retry_guards()
     install_douyin_public_api()
     install_bot_menu()
@@ -2259,6 +2355,7 @@ def main() -> None:
     patch_bounded_cookie_fallback()
     patch_single_douyin_probe()
     patch_wechat_channels_failure()
+    patch_truthful_format_menu()
     install_cookie_import()
     install_navigation()
     print("Private hardening applied.")

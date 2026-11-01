@@ -5,19 +5,33 @@ import json
 import re
 
 from yt_dlp.extractor.common import InfoExtractor
+from yt_dlp.utils import ExtractorError
 
 _MOBILE_UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
               "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1")
 _API = "http://xhs-downloader:5556/xhs/detail"
 
 
+def video_urls(data):
+    kind = data.get("作品类型")
+    if kind and kind not in ("视频", "video"):
+        raise ExtractorError("该小红书作品是图文，不是视频", expected=True)
+    urls = data.get("下载地址") or []
+    if not urls:
+        raise ExtractorError("小红书没有返回视频地址", expected=True)
+    # The service provides media items, not alternate qualities.
+    return urls[:1]
+
+
 class XiaoHongShuShareIE(InfoExtractor):
-    IE_NAME = "xiaohongshu"
-    _VALID_URL = r"https?://(?:www\.)?xiaohongshu\.com/(?:discovery/item|explore)/(?P<id>[0-9a-f]{16,32})"
+    IE_NAME = "xiaohongshu:share"
+    _VALID_URL = r"https?://(?:(?:www\.)?xiaohongshu\.com/(?:discovery/item|explore)/|(?:www\.)?xhslink\.(?:cn|com)/(?:o|a)/)(?P<id>[a-zA-Z0-9]{5,32})"
     _TESTS = []
 
     def _real_extract(self, url):
         note_id = self._match_id(url)
+        if re.match(r"https?://(?:www\.)?xhslink\.(?:cn|com)/", url):
+            return self._from_api(url, note_id)
         try:
             return self._from_page(url, note_id)
         except Exception:
@@ -52,14 +66,7 @@ class XiaoHongShuShareIE(InfoExtractor):
                                 "filesize": vm.get("size"), "protocol": "https",
                                 "http_headers": {"User-Agent": _MOBILE_UA}})
         if not formats:
-            for img in note.get("imageList") or []:
-                u = img.get("url_default")
-                if u:
-                    formats.append({"url": u.replace("http://", "https://"), "ext": "jpg",
-                                    "format_id": "image", "protocol": "https"})
-        if not formats:
             raise ValueError("no formats on page")
-        self.sort_formats(formats)
         return {"id": real_id, "title": title, "formats": formats, "uploader": uploader}
 
     def _from_api(self, url, note_id):
@@ -68,16 +75,11 @@ class XiaoHongShuShareIE(InfoExtractor):
             _API, data=json.dumps({"url": url}).encode(),
             headers={"Content-Type": "application/json"}, method="POST")
         data = (json.loads(urllib.request.urlopen(req, timeout=30).read().decode()) or {}).get("data") or {}
-        urls = data.get("下载地址") or []
-        if not urls:
-            urls = [u for u in (data.get("动图地址") or []) if u]
-        if not urls:
-            raise ValueError("API returned no download urls")
+        urls = video_urls(data)
         title = (data.get("作品标题") or "小红书")[:80]
         formats = [{"url": u, "ext": "mp4", "format_id": f"api-{i}",
                     "protocol": "https", "http_headers": {"User-Agent": _MOBILE_UA}}
                    for i, u in enumerate(urls, 1)]
-        self.sort_formats(formats)
         return {"id": data.get("作品ID", note_id), "title": title, "formats": formats,
                 "uploader": data.get("作者昵称") or None,
                 "thumbnail": data.get("封面地址") or None}

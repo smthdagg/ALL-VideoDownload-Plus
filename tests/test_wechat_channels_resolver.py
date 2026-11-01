@@ -30,6 +30,24 @@ def load_module():
 
 
 class WeChatChannelsResolverTest(unittest.TestCase):
+    def test_feed_page_url_resolves_export_id_and_token(self):
+        module = load_module()
+        module._post_feed_info = Mock(return_value={"data": {"feedInfo": {
+            "description": "long page", "videoUrl": "https://example.com/video.mp4"
+        }}})
+        url = 'https://channels.weixin.qq.com/finder-preview/pages/feed?eid=example123&token=test-token'
+        info = module.fetch_wechat_channels_video(url)
+        self.assertEqual(info['title'], 'long page')
+        self.assertEqual(info['id'], 'example123')
+        self.assertEqual(module._post_feed_info.call_args.args[0], {
+            'baseReq': {'generalToken': 'test-token'}, 'exportId': 'example123'
+        })
+
+    def test_feed_page_requires_trusted_host_and_export_id(self):
+        module = load_module()
+        self.assertFalse(module.is_wechat_channels_url('https://channels.weixin.qq.com.evil.test/finder-preview/pages/feed?eid=abc'))
+        self.assertFalse(module.is_wechat_channels_url('https://channels.weixin.qq.com/finder-preview/pages/feed'))
+
     def test_public_short_uri_returns_ytdlp_info_when_video_url_exists(self):
         module = load_module()
 
